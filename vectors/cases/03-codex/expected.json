@@ -423,7 +423,7 @@
    "window": "five_hour"
   }
  ],
- "spec": "1.1",
+ "spec": "1.2",
  "totals": [
   {
    "cache_read": 8000,

@@ -118,8 +118,11 @@ Read it with these limits in mind. The meter states them in its reports too.
   - **The percent is a whole number.** The meter gives a band: the ceiling for any percent one point either side.
   - **Early readings are rough.** A week under 20% used shows "not enough data", not a dollar figure.
 - **Each account is kept apart.** If you switch between Claude accounts, each account's weeks are kept separate.
-  Older logs don't say which account they belong to; with more than one account, that spend is shown as
-  unattributed rather than guessed.
+  Signing in to another account switches every running Claude Code session without a word in the logs, so the
+  meter tells the accounts apart by when each one's week resets, and the chart names them that way ("the account
+  that resets Monday"). Right after a switch, spend counts toward the earlier account until a reading shows the
+  new one (with the statusline wrapper, when the plan's percent next moves). Older logs don't say which account
+  they belong to; with more than one account, that spend is shown as unattributed rather than guessed.
 - **Changes that can't be judged aren't shown.**
   - **Early resets.** When a week overlaps the last one because the plan reset early, the meter says so instead of
     showing a change.

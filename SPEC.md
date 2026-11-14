@@ -1,6 +1,7 @@
 # SPEC: the meter
 
-Version 1.1 · 2026-11-14 (1.1 adds §9.1, `shown`, the plain-words notes and the `trend` and `chart` parts)
+Version 1.2 · 2026-11-14 (1.1 adds §9.1, `shown`, the plain-words notes and the `trend` and `chart` parts; 1.2 adds
+§3.8, accounts by reset schedule)
 
 This is the contract. An implementation in any language that follows it, and prints the same conformance document
 for every case in `vectors/` (§12), is a conforming meter. `reference/` is one such implementation, in Python 3.9+
@@ -242,8 +243,8 @@ and `last_token_usage` (this response).
 ### 3.7 Accounts
 
 A plan's limits belong to an account, and one machine can be signed in to several. So events and readings carry
-the account when the logs name it. An event or reading with no account of its own is resolved when a report runs,
-in this order:
+the account when the logs name it. Where §3.8 applies, it decides first. Otherwise an event or reading with no
+account of its own is resolved when a report runs, in this order:
 
 1. **Its session's account,** from the sessions map.
 2. **The machine's only account.** This applies when its source has used exactly one known account. For Claude
@@ -252,6 +253,39 @@ in this order:
 3. Otherwise `""`, unknown.
 
 In output an account is shown by its **first 8 characters**.
+
+### 3.8 Accounts by reset schedule
+
+Signing in to another account in Claude Code switches every running session of that config folder at once, and the
+transcripts don't record it: a session's owner line keeps naming the account it started with. Each account's week
+resets at its own fixed time, so the reset time a reading shows says whose week it is. A sign-in belongs to one
+config folder, so this rule works folder by folder. It is decided when a report runs, from the ledger as it stands.
+
+1. **Folders.** A session's folder is the projects folder that holds its main transcript: a Claude Code file named
+   `<session>.jsonl` that the ledger has read, now or before, whose parent folder isn't named `subagents`. The
+   folder is that file's parent's parent; when there are several such files, the first path in byte order counts.
+   A reading with an empty session belongs to the only folder, when the ledger has exactly one. A reading or event
+   whose session has no such file has no folder.
+2. **Schedules.** A Claude seven-day reading's schedule is its `resets_at` modulo 604,800 seconds. Take all Claude
+   seven-day readings in order of `at`, then `resets_at`, then session. The first reading of a schedule sets its
+   value. A later reading joins the first schedule, in the order they were set, whose value is within 600 seconds
+   of its own around the week; otherwise it sets a new one.
+3. **Names.** In each folder, each of its sessions votes once: its account from the sessions map, for the schedule
+   of its own first seven-day reading in that order. A session with no account doesn't vote. In that folder, a
+   schedule is named for the account with the most votes; a tie names no one, and a schedule none of the folder's
+   sessions voted for is unnamed there.
+4. **When it applies.** Only when Claude Code's known accounts (§3.7) are two or more and the seven-day readings
+   show two or more schedules. Then it applies in a folder when one of its sessions' own seven-day readings fall on
+   schedules named for two different accounts: the sign-in changed under a running session. Accounts used side by
+   side, each in its own config folder, don't meet that test, and their owner lines stand.
+5. **Timelines.** A folder where it applies has a timeline: its seven-day readings other than manual ones, in the
+   order above, each standing for its schedule's name there, or for no one when that schedule is unnamed.
+6. **Readings.** In such a folder, a Claude seven-day reading other than a manual one takes its schedule's name. A
+   Claude reading in any other window, other than a manual one, takes the account in use at its `at` (step 7).
+7. **Events.** A Claude Code event in such a folder takes the account in use at its time: that of the latest
+   reading on the folder's timeline at or before it, if that reading was taken at most 604,800,000 ms before (a
+   sign-in outlasts a reset) and stands for an account. This holds whatever account the event's own lines name.
+8. When step 6 or 7 finds no account, §3.7 decides.
 
 ## 4 Dedupe
 
@@ -601,8 +635,10 @@ The character is the one at that level, counting `▁` as 0.
   account in use now, for Claude's `seven_day`.
 - "You used $A in the last 7 days, up Z% from the 7 days before": the spend trend.
 
-When a change is `null`, or `within rounding`, the sentence says that in words instead of a percent. Sentences are
-presentation, not part of the conformance document.
+When a change is `null`, or `within rounding`, the sentence says that in words instead of a percent. When more than
+one account's weeks are in view, the first sentence names its account the way the chart's legend does (§11.3): "On
+the account that resets Saturday, your plan's week is worth about $X ...". Sentences are presentation, not part of
+the conformance document.
 
 ## 10 Yield (Level 2)
 
@@ -757,8 +793,10 @@ One page, run in the foreground until Ctrl-C. Nothing starts it at login.
     colour; hairline gridlines.
   - **Axes:** a y-axis from zero with clean ticks.
   - **Labels:** text in ink colours, never the series colour; a legend whenever two or more accounts are plotted or
-    the one plotted isn't the account in use now; the value labelled at the end of each line, with a short leader
-    in the series colour when two labels had to be pushed apart.
+    the one plotted isn't the account in use now, naming each account in plain words by the weekday its latest
+    plotted week ends on, in the report's zone ("the account that resets Monday"), or by its first 8 characters
+    when two share that weekday; the value labelled at the end of each line, with a short leader in the series
+    colour when two labels had to be pushed apart.
   - **Colours:** the categorical slots in fixed order, `#2a78d6`, `#eb6834`, `#1baf7a` in light mode, with their
     dark steps `#3987e5`, `#d95926`, `#199e70`. A fourth account or more folds into the table only.
   - **Hover:** each point's values are in an SVG `<title>`, the browser's own tooltip. The page has no script, and
@@ -830,7 +868,7 @@ prints one JSON document:
 
 | Key | What it holds |
 |---|---|
-| `spec` | `"1.1"` |
+| `spec` | `"1.2"` |
 | `events` | every event in the ledger, sorted by `at` then `key`: the §3.4 fields with `account` in its 8-character form and `at` as a time, plus `priced` (bool) and `cost_nano` (integer or `null`) |
 | `totals` | per `(source, model)`, sorted by both: `events`; the sums of `input`, `cache_read`, `cache_write`, `cache_write_1h`, `output`, `reasoning`, `web_search`; `cost_nano` and `usd`, `null` when the model is unpriced; `priced` |
 | `by_day` | per `(day, source)` in `--tz`, sorted by both: `events`, `cost_nano` (priced only), `usd`, `unpriced_events` |
@@ -861,6 +899,11 @@ python3 -I vectors/run.py -- <your command>
 
 - **The ceiling is a lower bound.** See §8. Readings from several accounts are kept apart only from the
   point the client began naming accounts. Before that, with more than one account, spend is unattributed.
+- **A switch shows only once a reading moves.** Under §3.8, spend between one account's last reading and the next
+  account's first goes to the earlier account. The wrapper records a reading when a session's percent or reset time
+  changes, so after switching back to an account whose weekly percent hasn't moved, the switch shows only when that
+  percent moves or a new session reads it. History rebuilt from fewer readings is rougher.
+- **Two accounts on one schedule in one config folder** can't be told apart by §3.8; their owner lines decide.
 - **The plan's percent is coarse.** Claude's statusline shows whole numbers. Early in a window the band is wide,
   which is why "firm" starts at 20%.
 - **Formats change.** The log formats are the clients' own and undocumented. The fields above are what the clients

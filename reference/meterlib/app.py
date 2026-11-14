@@ -167,7 +167,11 @@ class Meter:
         headline = {"ceiling_usd": mine["last_ceiling_usd"] if mine else None,
                     "change_pct": mine["change_pct"] if mine else None,
                     "direction": mine["direction"] if mine else None, "since": mine["first_resets_at"] if mine else None}
-        sentence = charts.ceiling_sentence(headline, self.tz)
+        name = None
+        if mine and family == "claude" and window == "seven_day":
+            name = charts.headline_name(who, [{"account": t["account"], "resets_at": t["last_resets_at"]}
+                                              for t in trends], self.tz)
+        sentence = charts.ceiling_sentence(headline, self.tz, name)
         if family == "codex":
             sentence = sentence.replace("Your plan's week", "Your Codex plan's %s" % ("week" if window == "seven_day" else "window"))
         elif window != "seven_day":
@@ -223,19 +227,19 @@ class Meter:
         except OSError as exc:
             raise MeterError("couldn't write %s (%s)" % (path, exc.strerror or exc.__class__.__name__))
         return {"path": path, "format": fmt,
-                "headline": charts.ceiling_sentence(data["headline"], self.tz),
+                "headline": charts.ceiling_sentence(data["headline"], self.tz, charts.headline_name(
+                    data["headline"].get("account"), data["ceiling_points"], self.tz)),
                 "spend": charts.spend_sentence(data["headline"]),
                 "spend_sparkline": data["spend_sparkline"], "ceiling_sparkline": data["ceiling_sparkline"]}
 
     def _current_account(self, family) -> str:
         """The account of the most recent request, resolved as every report resolves it (SPEC.md §3.7)."""
         source = analysis.FAMILY_SOURCE[family]
-        row = self.conn.execute("SELECT account, session FROM events WHERE source = ? AND at <= ? "
-                                "ORDER BY at DESC, key DESC LIMIT 1", (source, self.now())).fetchone()
+        row = self.conn.execute("SELECT %s FROM events WHERE source = ? AND at <= ? ORDER BY at DESC, key DESC LIMIT 1"
+                                % ", ".join(ledger.EVENT_COLUMNS), (source, self.now())).fetchone()
         if not row:
             return ""
-        return (row[0] or ledger.session_accounts(self.conn).get(row[1], "")
-                or ledger.sole_accounts(self.conn).get(source, ""))
+        return ledger.resolve_events(self.conn, [dict(zip(ledger.EVENT_COLUMNS, row))])[0]["account"]
 
     def _no_readings_note(self, family):
         if family == "codex":

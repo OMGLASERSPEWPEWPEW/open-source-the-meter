@@ -139,7 +139,7 @@ These bind any agent working in the repo. AGENTS.md states them, step by step; C
   - Saved data: the built files, in the clone.
   - Scope: the agent installs nothing from the network: no package managers, no downloads, no other repositories.
 
-### Reading sources (FR-7 – FR-15, and FR-41)
+### Reading sources (FR-7 – FR-15, FR-41 and FR-47)
 
 - **FR-7 Where the logs are.**
   - Trigger: each sync (FR-11), and `status`.
@@ -238,14 +238,25 @@ These bind any agent working in the repo. AGENTS.md states them, step by step; C
   - Trigger: a sync reads an event or a reading, and a report resolves its account.
   - Behavior: one machine can be signed in to several accounts, and a plan's limits belong to an account. Events and
     readings carry the account when the logs name it: Claude Code's session-owner lines, Codex's session meta line.
-    One with no account of its own takes its session's account, else the machine's only account for that client
-    when there has been just one, else none (SPEC.md §3.7, ADR 0004). Ceilings are worked out per account (FR-25).
+    Where Claude Code's reset schedules show the sign-in changing under running sessions, those decide first
+    (FR-47, SPEC.md §3.8). Otherwise one with no account of its own takes its session's account, else the
+    machine's only account for that client when there has been just one, else none (SPEC.md §3.7, ADR 0004). Ceilings are worked out per account (FR-25).
     Reports show an account by a short prefix.
   - Error state: an account id that isn't valid is ignored (SPEC.md §3.3). Spend with no known account is never
     guessed into an account: a ceiling for a known account leaves it out and reports it as unattributed.
   - Saved data: the account on each event and reading, and the sessions-to-accounts map.
   - Scope: the meter knows only the accounts the logs name. Before the clients named accounts, a machine with more
     than one has unattributed spend (SPEC.md §13).
+- **FR-47 Accounts told apart by their reset schedules** (from this maintainer's own logs, 2026-11-14: two accounts,
+  switched machine-wide each time one ran out, so every week read "two reset schedules mixed").
+  - Trigger: any report, when some session's own plan readings show two accounts' weekly schedules.
+  - Behavior: folder by folder, each schedule is named for the account its sessions' owner lines mostly name; a
+    reading takes its schedule's account; spend takes the account of the latest reading in its projects folder, up
+    to seven days old, whatever account its own lines name. A reading on a schedule no one is named for, or none,
+    leaves FR-41's order to decide (SPEC.md §3.8). The chart names each account by the weekday its week resets ("the account that resets
+    Monday").
+  - Scope: one account, one schedule, or accounts used side by side in separate config folders: nothing changes.
+    Nothing new is stored; it is decided when a report runs.
 
 ### Pricing (FR-16 – FR-19)
 
@@ -625,7 +636,7 @@ each exact rule.
 | Scope and safety | What every implementation must and must never do | FR-2, FR-4, FR-7, section 4 | §1 |
 | Money and time | Nano-dollars, rounding, times, days, time zones | FR-17, FR-33 | §2 |
 | Sources | Folders, file order, lines, events, Claude Code, Codex | FR-7 – FR-9, FR-12, FR-21, FR-22 | §3.1 – §3.6 |
-| Accounts | Which account an event or reading belongs to | FR-41 | §3.7 |
+| Accounts | Which account an event or reading belongs to | FR-41, FR-47 | §3.7, §3.8 |
 | Dedupe | One event per response, across lines, files and syncs | FR-10 | §4 |
 | Prices | `prices.json`, matching models, the cost of one event | FR-16 – FR-18 | §5 |
 | Readings | The readings file, the wrapper, Codex, limit hits, manual entry, distinct readings | FR-20 – FR-24 | §6 |

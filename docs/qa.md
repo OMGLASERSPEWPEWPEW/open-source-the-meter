@@ -6,9 +6,11 @@ Date: 2026-11-14 · Scope: SPEC.md, `reference/`, `vectors/`, AGENTS.md, the doc
 
 Run on macOS's Python 3.9 (`/usr/bin/python3`) and on a newer one:
 
-- [x] `python3 -B -I vectors/run.py`: 7 of 7 cases pass. That's 9 runs, counting each step.
-- [x] `python3 -B -I -m unittest discover -s reference/tests`: 47 tests pass. They cover:
+- [x] `python3 -B -I vectors/run.py`: 8 of 8 cases pass. That's 10 runs, counting each step.
+- [x] `python3 -B -I -m unittest discover -s reference/tests`: 50 tests pass. They cover:
   - the MCP handshake and errors, its argument checks, and output limits;
+  - accounts by reset schedule: a switch under a running session, two folders sharing a schedule, an unnamed
+    schedule, manual readings, a `subagents` folder above the logs;
   - the wrapper (a moved clone, a closed pipe), its install and undo, and strict JSON;
   - `mcp-install` for Cursor, round trip, never printing other entries;
   - the dashboard's Host, Sec-Fetch-Site and method checks, with headers on error pages;
@@ -46,6 +48,16 @@ Use a throwaway home first: `OPEN_METER_HOME="$(mktemp -d)"`.
   - `curl -H 'Host: evil.example:8787' http://127.0.0.1:8787/` gives 421.
 - [ ] **Undo, all of it:** `statusline-uninstall --apply`, remove the MCP entries, `rm -rf ~/.open-meter`. Nothing
   of the meter is left outside the clone.
+
+## Accounts by schedule (FR-47)
+
+- [ ] **The vectors.** `python3 -B -I vectors/run.py --case 08-account-switch` passes. That case pins: a session
+  whose owner line says A keeps running after the machine signs in to B, and its later spend, its subagent's and
+  its readings on B's schedule count as B's; each account's weeks carry no "two reset schedules mixed".
+- [ ] **Side by side stays apart.** Case 02 (two accounts working side by side) is unchanged, and the unit tests
+  show a second projects folder keeping its own owner lines.
+- [ ] **The chart's names.** With two accounts plotted, the legend reads "the account that resets <weekday>", and
+  the ids only when two accounts reset on the same weekday.
 
 ## The picture (FR-42 – FR-45)
 

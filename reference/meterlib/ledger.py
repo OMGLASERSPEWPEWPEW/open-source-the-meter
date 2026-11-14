@@ -6,6 +6,7 @@ yet (the client may still be writing it), so a half-written last line is read wh
 
 from __future__ import annotations
 
+import bisect
 import json
 import os
 import sqlite3
@@ -325,10 +326,111 @@ def several_accounts(conn) -> frozenset:
     return frozenset(family[s] for s, accts in known_accounts(conn).items() if s in family and len(accts) > 1)
 
 
-def _resolve(rows, owners, sole, source_of=lambda r: r["source"]) -> list[dict]:
+WEEK = 7 * 86400
+
+
+def _same_phase(a: int, b: int) -> bool:
+    d = abs(a - b) % WEEK
+    return min(d, WEEK - d) <= 600
+
+
+class Schedules:
+    """Claude Code's accounts told apart by their weekly reset schedules (SPEC.md §3.8).
+
+    Signing in to another account switches every running Claude Code session of that config folder at once, and the
+    transcripts don't record it, so a session's owner line can name the wrong account. Each account's week resets at
+    its own fixed time, so the reset time a reading shows says whose week it is. A sign-in belongs to one folder, so
+    schedules are named, and the rule tested, folder by folder. It applies in a folder only when one of its sessions'
+    own readings show two accounts' schedules: direct evidence that the sign-in changed under running sessions."""
+
+    def __init__(self, conn):
+        self.phases, self.names, self.lines, self.folders, self.only = [], {}, {}, {}, None
+        if len(known_accounts(conn).get("claude_code", ())) < 2:
+            return
+        rows = conn.execute("SELECT at, resets_at, session, source FROM readings WHERE family = 'claude' "
+                            "AND window = 'seven_day' ORDER BY at, resets_at, session").fetchall()
+        tagged = [(at, resets_at, session, source, self._phase(resets_at)) for at, resets_at, session, source in rows]
+        if len(self.phases) < 2:
+            return
+        for path, in conn.execute("SELECT path FROM files WHERE kind = 'claude' ORDER BY path"):
+            if path.endswith(".jsonl") and os.path.basename(os.path.dirname(path)) != "subagents":
+                self.folders.setdefault(os.path.basename(path)[:-len(".jsonl")], os.path.dirname(os.path.dirname(path)))
+        if len(set(self.folders.values())) == 1:
+            self.only = next(iter(self.folders.values()))
+        owners, voted, votes = session_accounts(conn), set(), {}
+        for _at, _resets, session, _source, ph in tagged:   # each session votes once, in its own folder
+            folder = self.folder(session)
+            if session and folder is not None and session not in voted:
+                voted.add(session)
+                if owners.get(session):
+                    tally = votes.setdefault((folder, ph), {})
+                    tally[owners[session]] = tally.get(owners[session], 0) + 1
+        for key, tally in votes.items():
+            ranked = sorted(tally.items(), key=lambda kv: (-kv[1], kv[0]))
+            if len(ranked) == 1 or ranked[0][1] > ranked[1][1]:   # a tie names no one
+                self.names[key] = ranked[0][0]
+        seen = {}
+        for _at, _resets, session, _source, ph in tagged:
+            name = self.names.get((self.folder(session), ph))
+            if session and name:
+                seen.setdefault(session, set()).add(name)
+        switched = {self.folder(s) for s, accts in seen.items() if len(accts) > 1}
+        for at, _resets, session, source, ph in tagged:   # one timeline per folder where a session saw a switch
+            folder = self.folder(session)
+            if folder in switched and source != "manual":
+                ats, names = self.lines.setdefault(folder, ([], []))
+                ats.append(at)
+                names.append(self.names.get((folder, ph), ""))   # "": an unnamed schedule, the account is unknown
+
+    def folder(self, session: str):
+        """A session's projects folder; a reading with no session belongs to the only folder, when there is one."""
+        return self.folders.get(session) if session else self.only
+
+    def _phase(self, resets_at: int) -> int:
+        p = resets_at % WEEK
+        for i, q in enumerate(self.phases):
+            if _same_phase(p, q):
+                return i
+        self.phases.append(p)
+        return len(self.phases) - 1
+
+    @property
+    def active(self) -> bool:
+        return bool(self.lines)
+
+    def reading_account(self, resets_at: int, session: str) -> str:
+        """The account a seven-day reading's schedule is named for in its session's folder, where the rule applies
+        there; "" otherwise (then §3.7 decides)."""
+        folder = self.folder(session)
+        if folder not in self.lines:
+            return ""
+        p = resets_at % WEEK
+        return next((self.names.get((folder, i), "") for i, q in enumerate(self.phases) if _same_phase(p, q)), "")
+
+    def account_at(self, session: str, at: int):
+        """The account in use in a session's folder at a time: that of the folder's latest reading at or before it,
+        taken at most seven days before (a sign-in outlasts a reset). None when there's none, or when that reading's
+        schedule names no one (then §3.7 decides)."""
+        line = self.lines.get(self.folder(session))
+        if not line:
+            return None
+        ats, names = line
+        i = bisect.bisect_right(ats, at) - 1
+        if i < 0 or at - ats[i] > WEEK * 1000 or not names[i]:
+            return None
+        return names[i]
+
+
+def _resolve(rows, owners, sole, source_of=lambda r: r["source"], schedules=None) -> list[dict]:
     """A row with no account of its own takes its session's (subagent files, statusline readings), and failing that,
-    the machine's only account when it has just one (logs from before the client named accounts)."""
+    the machine's only account when it has just one (logs from before the client named accounts). Where Claude
+    Code's reset schedules tell its accounts apart, they decide instead (SPEC.md §3.8)."""
     for r in rows:
+        if schedules is not None and schedules.active and source_of(r) == "claude_code":
+            found = schedules.account_at(r.get("session", ""), r["at"])
+            if found is not None:
+                r["account"] = found
+                continue
         if not r["account"] and r.get("session"):
             r["account"] = owners.get(r["session"], "")
         if not r["account"]:
@@ -336,9 +438,14 @@ def _resolve(rows, owners, sole, source_of=lambda r: r["source"]) -> list[dict]:
     return rows
 
 
+def resolve_events(conn, rows) -> list[dict]:
+    """Events as dicts, with their accounts resolved as every report resolves them (SPEC.md §3.7, §3.8)."""
+    return _resolve(rows, session_accounts(conn), sole_accounts(conn), schedules=Schedules(conn))
+
+
 def all_events(conn) -> list[dict]:
     rows = conn.execute("SELECT %s FROM events ORDER BY at, key" % ", ".join(EVENT_COLUMNS)).fetchall()
-    return _resolve([dict(zip(EVENT_COLUMNS, r)) for r in rows], session_accounts(conn), sole_accounts(conn))
+    return resolve_events(conn, [dict(zip(EVENT_COLUMNS, r)) for r in rows])
 
 
 def events_between(conn, start_ms: int | None, end_ms: int | None) -> list[dict]:
@@ -351,15 +458,21 @@ def events_between(conn, start_ms: int | None, end_ms: int | None) -> list[dict]
         sql += " AND at <= ?"
         args.append(end_ms)
     rows = conn.execute(sql + " ORDER BY at, key", args).fetchall()
-    return _resolve([dict(zip(EVENT_COLUMNS, r)) for r in rows], session_accounts(conn), sole_accounts(conn))
+    return resolve_events(conn, [dict(zip(EVENT_COLUMNS, r)) for r in rows])
 
 
 def all_readings(conn) -> list[dict]:
     """Every plan reading with its account resolved, each distinct one once at the earliest time it was seen."""
     rows = conn.execute("SELECT family, window, resets_at, percent, session, account, at, source FROM readings").fetchall()
-    owners, sole = session_accounts(conn), sole_accounts(conn)
+    owners, sole, schedules = session_accounts(conn), sole_accounts(conn), Schedules(conn)
     best = {}
     for family, window, resets_at, percent, session, account, at, source in rows:
+        if family == "claude" and schedules.active and source != "manual":
+            # the schedule decides: a seven-day reading by its own reset time, any other by the account in use
+            found = (schedules.reading_account(resets_at, session) if window == "seven_day"
+                     else schedules.account_at(session, at))
+            if found:
+                account = found
         account = account or owners.get(session, "") or sole.get({"claude": "claude_code"}.get(family, family), "")
         pct = int(percent) if float(percent).is_integer() else percent
         k = (family, account, window, resets_at, pct)

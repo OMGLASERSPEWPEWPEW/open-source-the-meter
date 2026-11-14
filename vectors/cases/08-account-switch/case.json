@@ -1,0 +1,8 @@
+{
+  "tz": "UTC",
+  "prices": "../../prices.json",
+  "claude_dir": "claude",
+  "quota_file": "quota.jsonl",
+  "now": "2026-11-12T18:00:00Z",
+  "description": "Accounts by reset schedule: one sign-in for the machine moves every running session, the owner lines don't change, and each reading's schedule says whose week it is; spend follows the latest reading's account, subagents and five-hour readings too."
+}

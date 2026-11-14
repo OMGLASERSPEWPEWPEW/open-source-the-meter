@@ -21,7 +21,8 @@ def _cell(v) -> str:
 def page_from(meter: Meter, data: dict, caption: str) -> str:
     """The page, picture first (SPEC.md §11.3): the headline, the two charts, then the tables for detail. The same
     page is the live dashboard and the file `chart --html` writes. No scripts; nothing from elsewhere."""
-    head = charts.ceiling_sentence(data["headline"], meter.tz)
+    head = charts.ceiling_sentence(data["headline"], meter.tz,
+                                   charts.headline_name(data["headline"].get("account"), data["ceiling_points"], meter.tz))
     sub = charts.spend_sentence(data["headline"])
     c1 = charts.ceiling_chart(data["ceiling_points"], meter.tz, headline_account=data["headline"].get("account"))
     c2 = charts.spend_chart(data["spend_points"])

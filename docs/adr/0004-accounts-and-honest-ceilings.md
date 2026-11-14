@@ -1,6 +1,6 @@
 # ADR 0004: Ceilings per account, and saying what can't be known
 
-Date: 2026-11-14 · Status: accepted
+Date: 2026-11-14 · Status: accepted; refined the same day by SPEC.md §3.8 (see the last section)
 
 ## Context
 
@@ -31,3 +31,14 @@ the desktop app, other machines.
 
 - **Single-account users** get full attribution, back through history.
 - **Multi-account users** get clean figures from the point the client names accounts, and a stated gap before it.
+
+## Refinement: accounts by reset schedule
+
+The first real multi-account run showed the order above isn't enough. Signing in to another account switches every
+running Claude Code session of that config folder at once, and the transcripts never record it, so owner lines name
+the account a session started with, not the one in use. Every week read "two reset schedules mixed".
+
+Each account's week resets at its own fixed time, so SPEC.md §3.8 now decides first, folder by folder. It names each
+schedule for the account its sessions' owner lines mostly name. It applies only where a session's own readings show
+two accounts. There, a reading takes its schedule's account and spend takes the account of the folder's latest
+reading. Accounts used side by side keep their owner lines. A switch shows only once a reading moves (§13).

@@ -16,6 +16,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from datetime import timezone
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 REF = os.path.dirname(HERE)
@@ -640,7 +641,103 @@ class RoundThree(TempHome):
         svg = charts.ceiling_chart([{"account": "aaaaaaaa", "resets_at": "2026-11-06T19:00:00.000Z", "ceiling_usd": "32.00",
                                      "band_low_usd": "30.00", "band_high_usd": "34.00", "firm": True}], None,
                                    headline_account="bbbbbbbb")
-        self.assertIn("account aaaaaaaa", svg, "a legend says whose line it is")
+        self.assertIn(">resets Friday<", svg, "a legend says whose line it is, in plain words")
+        two = charts.account_names([{"account": "aaaaaaaa", "resets_at": "2026-11-06T19:00:00.000Z"},
+                                    {"account": "bbbbbbbb", "resets_at": "2026-11-13T02:00:00.000Z"}], timezone.utc)
+        self.assertEqual(two, {"aaaaaaaa": "account aaaaaaaa", "bbbbbbbb": "account bbbbbbbb"}, "a shared weekday names ids")
+        pts = [{"account": "aaaaaaaa", "resets_at": "2026-11-09T13:00:00.000Z"},
+               {"account": "bbbbbbbb", "resets_at": "2026-11-14T11:00:00.000Z"}]
+        name = charts.headline_name("bbbbbbbb", pts, timezone.utc)
+        self.assertEqual(name, "the account that resets Saturday")
+        self.assertTrue(charts.ceiling_sentence({"ceiling_usd": "33.33", "change_pct": None}, timezone.utc, name)
+                        .startswith("On the account that resets Saturday, your plan's week is worth about $33"))
+        self.assertIsNone(charts.headline_name("aaaaaaaa", pts[:1], timezone.utc), "one account: no name needed")
+
+
+class AccountSwitch(TempHome):
+    """SPEC.md §3.8: one sign-in moves every running session; reset schedules tell the accounts apart."""
+
+    def _ledger(self):
+        from meterlib import ledger
+        conn = ledger.open_db(os.path.join(self.tmp, "switch.db"))
+        conn.execute("INSERT INTO sessions VALUES ('s1', 'A'), ('s2', 'B'), ('s3', 'C')")
+        conn.executemany("INSERT INTO files (path, kind, offset) VALUES (?, 'claude', 0)",
+                         [("/x/projects/p/s1.jsonl",), ("/x/projects/q/s2.jsonl",), ("/y/projects/p/s3.jsonl",)])
+        return ledger, conn
+
+    def _read(self, conn, at, resets, session, pct=10):
+        from meterlib.util import parse_time_ms
+        conn.execute("INSERT INTO readings VALUES ('claude', 'seven_day', ?, ?, ?, '', ?, 'statusline', 1)",
+                     (parse_time_ms(resets) // 1000, pct, session, parse_time_ms(at)))
+
+    def _event(self, conn, key, session, at):
+        from meterlib.util import parse_time_ms
+        conn.execute("INSERT INTO events VALUES (?, 'claude_code', ?, '', 'p', 'claude-opus-5-5', ?, 0, 0, 0, 0, 1, 0, 0, "
+                     "'standard', 'global')", (key, session, parse_time_ms(at)))
+
+    def accounts(self, ledger, conn):
+        return {e["key"]: e["account"] for e in ledger.all_events(conn)}
+
+    def test_owner_lines_stand_until_a_session_sees_its_account_change(self):
+        ledger, conn = self._ledger()
+        self._read(conn, "2026-11-03T10:00:00Z", "2026-11-09T13:00:00Z", "s1")   # A: Mondays
+        self._read(conn, "2026-11-08T10:00:00Z", "2026-11-14T11:00:00Z", "s2")   # B: Saturdays
+        self._event(conn, "e1", "s1", "2026-11-08T12:00:00Z")
+        self.assertFalse(ledger.Schedules(conn).active, "two accounts side by side: their owner lines are right")
+        self.assertEqual(self.accounts(ledger, conn)["e1"], "A")
+        self._read(conn, "2026-11-08T11:00:00Z", "2026-11-14T11:00:00Z", "s1")   # s1 now on B's schedule
+        self.assertTrue(ledger.Schedules(conn).active)
+        self.assertEqual(self.accounts(ledger, conn)["e1"], "B", "spend follows the latest reading's account")
+
+    def test_two_folders_sharing_a_schedule_stay_apart(self):
+        ledger, conn = self._ledger()   # s1 (A) in /x, s3 (C) in /y; then an early reset puts both on one schedule
+        conn.execute("INSERT INTO sessions VALUES ('s4', 'A'), ('s5', 'A'), ('s6', 'C')")
+        conn.executemany("INSERT INTO files (path, kind, offset) VALUES (?, 'claude', 0)",
+                         [("/x/projects/p/s4.jsonl",), ("/x/projects/p/s5.jsonl",), ("/y/projects/p/s6.jsonl",)])
+        self._read(conn, "2026-11-03T10:00:00Z", "2026-11-09T13:00:00Z", "s1")
+        self._read(conn, "2026-11-03T11:00:00Z", "2026-11-05T08:00:00Z", "s3")
+        for s in ("s4", "s5"):
+            self._read(conn, "2026-11-11T19:00:00Z", "2026-11-18T18:00:00Z", s)
+        self._read(conn, "2026-11-11T19:30:00Z", "2026-11-18T18:00:00Z", "s6")
+        self._read(conn, "2026-11-11T20:00:00Z", "2026-11-18T18:00:00Z", "s3", 9)
+        self._event(conn, "c_after", "s3", "2026-11-11T21:00:00Z")
+        self.assertFalse(ledger.Schedules(conn).active, "each folder names its own schedules")
+        self.assertEqual(self.accounts(ledger, conn)["c_after"], "C")
+        self.assertEqual({r["account"] for r in ledger.all_readings(conn) if r["percent"] == 9}, {"C"})
+
+    def test_an_unnamed_schedule_ends_a_run_and_manual_readings_change_nothing(self):
+        ledger, conn = self._ledger()
+        self._read(conn, "2026-11-03T10:00:00Z", "2026-11-09T13:00:00Z", "s1")   # A
+        self._read(conn, "2026-11-04T10:00:00Z", "2026-11-07T11:00:00Z", "s2")   # B
+        self._read(conn, "2026-11-04T11:00:00Z", "2026-11-07T11:00:00Z", "s1")   # s1 on B: a switch
+        self._read(conn, "2026-11-05T09:00:00Z", "2026-11-11T09:00:00Z", "s1")   # A after an early reset: no voter
+        self._event(conn, "unnamed", "s1", "2026-11-05T10:00:00Z")
+        conn.execute("INSERT INTO readings VALUES ('claude', 'seven_day', ?, 50, '', 'A', ?, 'manual', 1)",
+                     (1794229200, 1793794800000))   # A's schedule, typed at 2026-11-04T12:20Z
+        self._event(conn, "after_manual", "s2", "2026-11-04T12:30:00Z")
+        got = self.accounts(ledger, conn)
+        self.assertEqual((got["unnamed"], got["after_manual"]), ("A", "B"), "§3.7 decides; a typed reading moves nothing")
+
+    def test_a_folder_named_subagents_above_the_logs_is_fine(self):
+        ledger, conn = self._ledger()
+        conn.execute("UPDATE files SET path = '/home/u/subagents/.claude' || substr(path, 3) WHERE path LIKE '/x/%'")
+        self._read(conn, "2026-11-03T10:00:00Z", "2026-11-09T13:00:00Z", "s1")
+        self._read(conn, "2026-11-04T10:00:00Z", "2026-11-07T11:00:00Z", "s2")
+        self._read(conn, "2026-11-04T11:00:00Z", "2026-11-07T11:00:00Z", "s1")
+        sch = ledger.Schedules(conn)
+        self.assertEqual(sch.folder("s1"), "/home/u/subagents/.claude/projects")
+        self.assertTrue(sch.active)
+
+    def test_a_reading_counts_for_seven_days_and_a_folder_keeps_its_own_sign_in(self):
+        ledger, conn = self._ledger()
+        self._read(conn, "2026-11-03T10:00:00Z", "2026-11-09T13:00:00Z", "s1")
+        self._read(conn, "2026-11-08T10:00:00Z", "2026-11-14T11:00:00Z", "s2")
+        self._read(conn, "2026-11-08T11:00:00Z", "2026-11-14T11:00:00Z", "s1")
+        self._event(conn, "after_reset", "s1", "2026-11-14T12:00:00Z")   # B's week reset; B is still signed in
+        self._event(conn, "stale", "s1", "2026-11-15T12:00:01Z")         # over seven days after the last reading
+        self._event(conn, "other_folder", "s3", "2026-11-08T12:00:00Z")  # /y is signed in on its own
+        got = self.accounts(ledger, conn)
+        self.assertEqual((got["after_reset"], got["stale"], got["other_folder"]), ("B", "A", "C"))
 
 
 class Vectors(unittest.TestCase):

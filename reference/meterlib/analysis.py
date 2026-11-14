@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from .util import NANO_PER_USD, day_of, decimal_of, format_time_ms, half_up, local_dt, usd
 
-SPEC_VERSION = "1.1"
+SPEC_VERSION = "1.2"
 
 FAMILY_SOURCE = {"claude": "claude_code", "codex": "codex"}
 WINDOW_SECONDS = {"five_hour": 5 * 3600, "seven_day": 7 * 86400}

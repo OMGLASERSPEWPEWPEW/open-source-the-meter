@@ -70,19 +70,28 @@ def date_words(iso: str, tz) -> str:
     return "%s\u00a0%d" % (dt.strftime("%b"), dt.day)   # a no-break space: a wrap never splits a date
 
 
-def ceiling_sentence(h: dict, tz) -> str:
+def headline_name(account: str, points: list, tz):
+    """The headline account's plain name ("the account that resets Saturday") when more than one account is in view;
+    None otherwise, or when the headline's account has no week in view."""
+    if not account or len({p["account"] for p in points}) < 2:
+        return None
+    return account_names(points, tz).get(account)
+
+
+def ceiling_sentence(h: dict, tz, name=None) -> str:
     if h.get("ceiling_usd") is None:
         if h.get("others_plotted"):
             return "No week with enough data yet for the account in use now (account %s); the chart shows your other accounts." % (h.get("account") or "unknown")
         return "No week with enough data yet: a week's worth shows once your plan reads 20% or more used, with its use tied to your account."
     x = money_words(h["ceiling_usd"])
+    lead = "On %s, your plan's week" % name if name else "Your plan's week"   # which line, when there are several
     if h.get("change_pct") is None:
-        return "Your plan's week is worth about %s of API use (one week so far)." % x
+        return "%s is worth about %s of API use (one week so far)." % (lead, x)
     since = date_words(h["since"], tz)
     if h["direction"] == "within rounding":
-        return "Your plan's week is worth about %s of API use, about the same as on %s (within the plan's rounding)." % (x, since)
-    return "Your plan's week is worth about %s of API use, %s %s%% since %s." % (
-        x, h["direction"], str(abs(Decimal(h["change_pct"]))), since)
+        return "%s is worth about %s of API use, about the same as on %s (within the plan's rounding)." % (lead, x, since)
+    return "%s is worth about %s of API use, %s %s%% since %s." % (
+        lead, x, h["direction"], str(abs(Decimal(h["change_pct"]))), since)
 
 
 def spend_sentence(h: dict) -> str:
@@ -137,6 +146,18 @@ def _frame(x0, y0, w, h, top, step, label_x=True) -> list:
     return out
 
 
+def account_names(points: list, tz) -> dict:
+    """Plain names for plotted accounts: "the account that resets Monday", from the weekday its latest week ends on
+    in the reader's time zone; "account <id>" when two accounts share that weekday."""
+    last = {}
+    for p in points:
+        at = parse_time_ms(p["resets_at"])
+        last[p["account"]] = max(at, last.get(p["account"], at))
+    days = {a: local_dt(at, tz).strftime("%A") for a, at in last.items()}
+    return {a: ("the account that resets %s" % d if a and list(days.values()).count(d) == 1
+                else "account %s" % (a or "unknown")) for a, d in days.items()}
+
+
 def ceiling_chart(points: list, tz, width: int = 720, height: int = 240, headline_account=None) -> str:
     """The implied weekly ceiling, week by week, one line per account (trusted weeks only), the band shaded."""
     if not points:
@@ -155,6 +176,7 @@ def ceiling_chart(points: list, tz, width: int = 720, height: int = 240, headlin
         return top_pad + h - float(min(_d(v), top) / top) * h
 
     accounts = sorted({p["account"] for p in points})
+    names = account_names(points, tz)
     out = ['<g role="img" aria-label="The implied weekly ceiling, week by week">']
     out += _frame(left, top_pad, w, h, top, step)
     last_x = None
@@ -169,8 +191,9 @@ def ceiling_chart(points: list, tz, width: int = 720, height: int = 240, headlin
         lx = left
         for i, acct in enumerate(accounts):
             out.append('<line class="line s%d" x1="%s" y1="14" x2="%s" y2="14"/>' % (i + 1, _f(lx), _f(lx + 16)))
-            out.append('<text class="label" x="%s" y="18">account %s</text>' % (_f(lx + 22), html.escape(acct or "unknown")))
-            lx += 22 + 8 * len("account " + (acct or "unknown")) + 18
+            short = names[acct].replace("the account that ", "")   # "resets Monday": three fit across the chart
+            out.append('<text class="label" x="%s" y="18">%s</text>' % (_f(lx + 22), html.escape(short)))
+            lx += 22 + 7 * len(short) + 18
     for i, acct in enumerate(accounts):
         s = i + 1
         ps = [p for p in points if p["account"] == acct]
@@ -184,7 +207,7 @@ def ceiling_chart(points: list, tz, width: int = 720, height: int = 240, headlin
         for p in ps:
             cx, cy = x(parse_time_ms(p["resets_at"])), y(p["ceiling_usd"])
             tip = "Week ending %s%s: $%s (band $%s to %s)" % (
-                date_words(p["resets_at"], tz), (" · account %s" % acct) if len(accounts) > 1 else "",
+                date_words(p["resets_at"], tz), (" · " + names[acct]) if len(accounts) > 1 else "",
                 p["ceiling_usd"], p["band_low_usd"], ("$" + p["band_high_usd"]) if p["band_high_usd"] else "no limit")
             fill = 'class="f%d ring"' % s
             out.append('<g><title>%s</title><circle class="hit" cx="%s" cy="%s" r="10"/><circle %s cx="%s" cy="%s" r="4"/></g>'
@@ -255,7 +278,8 @@ def wrap(text: str, width: int) -> list:
 
 def standalone_svg(data: dict, tz, caption: str, width: int = 720) -> str:
     """One self-contained SVG: the headline, both charts and a caption. Opens in any browser or Quick Look."""
-    head, sub = ceiling_sentence(data["headline"], tz), spend_sentence(data["headline"])
+    name = headline_name(data["headline"].get("account"), data["ceiling_points"], tz)
+    head, sub = ceiling_sentence(data["headline"], tz, name), spend_sentence(data["headline"])
     c1 = ceiling_chart(data["ceiling_points"], tz, width, headline_account=data["headline"].get("account"))
     c2 = spend_chart(data["spend_points"], width)
     y = 0

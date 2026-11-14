@@ -17,6 +17,7 @@ None of it comes from a real person's logs.
 | `05-yield` | Level 2 git yield from a fixed `git log`: lockfiles and generated files left out, a revert pair, a binary file, spend only from sessions inside the repo |
 | `06-hostile` | Hostile input stays data: odd text kept as text, mistyped or absurd counts as 0, a bad account id ignored, a symlinked log never read, reset times past year 9999 or in milliseconds or not numbers refused, a `cwd` that isn't text, a line nested too deep to parse (counted bad, and the sync goes on), and a readings file with refused lines |
 | `07-trends` | Trends and the chart: the 7-day spend change and direction, the weekly ceiling's change from its first to its last trusted week, the daily series with its 7-day average, the sparklines, the plotted points and the headline numbers. Cases 01, 02 and 03 also pin their trend and chart parts (a missing earlier week, the trusted filter, Codex) |
+| `08-account-switch` | Accounts by reset schedule (SPEC.md §3.8): one sign-in for the machine moves every running session while the owner lines stay put; each reading's schedule says whose week it is, and spend, a subagent's too, follows the latest reading's account |
 
 The cases use `prices.json` in this folder, a frozen copy of the price list. Updating the repo's prices never
 changes an expected answer.
