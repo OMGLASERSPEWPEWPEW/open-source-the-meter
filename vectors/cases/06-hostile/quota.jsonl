@@ -1,0 +1,4 @@
+{"at":"2026-11-10T10:00:00.000Z","source":"statusline","family":"claude","window":"seven_day","percent":40,"resets_at":10000000000000000000,"session":"sess-h1"}
+{"at":"2026-11-10T10:00:00.000Z","source":"statusline","family":"claude","window":"seven_day\n","percent":40,"resets_at":1794596400,"session":"sess-h1"}
+{"at":"2026-11-10T10:09:00.000Z","source":"evil","family":"claude","window":"seven_day","percent":40,"resets_at":1794596400,"session":"sess-h1"}
+{"at":"9999-12-31T23:59:59-01:00","source":"statusline","family":"claude","window":"seven_day","percent":50,"resets_at":1794596400,"session":"sess-h1"}

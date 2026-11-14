@@ -1,0 +1,6 @@
+{
+  "tz": "-06:00",
+  "prices": "../../prices.json",
+  "claude_dir": "claude",
+  "description": "Claude Code: count each response once, price every token kind, leave unknown models unpriced."
+}

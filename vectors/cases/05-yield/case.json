@@ -1,0 +1,12 @@
+{
+  "tz": "UTC",
+  "prices": "../../prices.json",
+  "claude_dir": "claude",
+  "description": "Level 2: commits and lines per API-equivalent dollar, from a fixed git log.",
+  "yield": {
+    "git_log": "git.log",
+    "repo": "/work/app",
+    "since": "2026-11-09T00:00:00Z",
+    "until": "2026-11-11T00:00:00Z"
+  }
+}

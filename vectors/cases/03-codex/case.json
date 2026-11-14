@@ -1,0 +1,6 @@
+{
+  "tz": "UTC",
+  "prices": "../../prices.json",
+  "codex_dir": "codex",
+  "description": "Codex: count by running total, price cached and cache-write input, long prompts, model changes; Codex's own plan readings make its ceilings."
+}

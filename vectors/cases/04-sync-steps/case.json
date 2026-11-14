@@ -1,0 +1,12 @@
+{
+  "tz": "UTC",
+  "prices": "../../prices.json",
+  "claude_dir": "claude",
+  "quota_file": "quota.jsonl",
+  "steps": [
+    "step1",
+    "step2",
+    "step3"
+  ],
+  "description": "Lazy sync across three runs on one ledger: a line is read only once it's whole, nothing is counted twice, a file cut short is read again, the readings file follows hand edits."
+}

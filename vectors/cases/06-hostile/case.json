@@ -1,0 +1,13 @@
+{
+  "tz": "UTC",
+  "prices": "../../prices.json",
+  "claude_dir": "claude",
+  "quota_file": "quota.jsonl",
+  "symlinks": [
+    {
+      "link": "claude/-work-h/linked.jsonl",
+      "target": "../../canary/credentials.json"
+    }
+  ],
+  "description": "Hostile input is data: odd text kept as text, bad counts as 0, symlinked logs never read."
+}

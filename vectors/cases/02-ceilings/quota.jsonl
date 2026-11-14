@@ -1,0 +1,10 @@
+{"at":"2026-11-01T11:00:00.000Z","source":"statusline","family":"claude","window":"seven_day","percent":4,"resets_at":1793991600,"session":"sess-a1"}
+{"at":"2026-11-03T11:00:00.000Z","source":"statusline","family":"claude","window":"seven_day","percent":13,"resets_at":1793991600,"session":"sess-a1"}
+{"at":"2026-11-04T12:00:00.000Z","source":"statusline","family":"claude","window":"seven_day","percent":25,"resets_at":1793991600,"session":"sess-a1"}
+{"at":"2026-11-04T12:00:00.000Z","source":"statusline","family":"claude","window":"seven_day","percent":25,"resets_at":1793991600,"session":"sess-a1"}
+{"at":"2026-11-08T11:00:00.000Z","source":"statusline","family":"claude","window":"seven_day","percent":9,"resets_at":1794596400,"session":"sess-a1"}
+{"at":"2026-11-11T11:00:00.000Z","source":"statusline","family":"claude","window":"seven_day","percent":37,"resets_at":1794596400,"session":"sess-a1"}
+{"at":"2026-11-08T13:00:00.000Z","source":"statusline","family":"claude","window":"seven_day","percent":6,"resets_at":1794448800,"session":"sess-b1"}
+{"at":"2026-11-10T10:00:00.000Z","source":"statusline","family":"claude","window":"five_hour","percent":52,"resets_at":1794322800,"session":"sess-a1"}
+{"at":"2026-11-14T09:00:00.000Z","source":"manual","family":"claude","window":"seven_day","percent":80,"resets_at":1794942000,"session":"","account":"aaaaaaaa-1111-4111-8111-111111111111"}
+{"at":"2026-11-16T09:00:00.000Z","source":"statusline","family":"claude","window":"seven_day","percent":150,"resets_at":1794942000}

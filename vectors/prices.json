@@ -1,0 +1,468 @@
+{
+  "about": "API list prices for the models Claude Code and Codex use, in US dollars per 1 million tokens. The meter prices every event with this one file, so weeks compare at the same prices.",
+  "checked": "2026-10-26",
+  "sources": {
+    "anthropic": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "openai": "https://developers.openai.com/api/docs/pricing"
+  },
+  "rules": {
+    "anthropic": "Cache writes cost 1.25x input for the 5-minute cache and 2x for the 1-hour cache; cache reads are listed per model. Fast mode and US-only inference multiply a request's whole token cost (fast_percent, us_geo_percent). Web search costs $10 per 1,000 searches.",
+    "openai": "input_tokens includes cached and cache-write tokens; output_tokens includes reasoning tokens. Above long_context.above_input_tokens of input, the whole request is priced at the long_context rates. A model with cache_write null prices cache writes as plain input."
+  },
+  "web_search_per_1000": {
+    "anthropic": 10
+  },
+  "models": {
+    "claude-fable-5-1": {
+      "provider": "anthropic",
+      "input": 10,
+      "output": 50,
+      "cache_read": 0.25,
+      "cache_write": 12.5,
+      "cache_write_1h": 20,
+      "us_geo_percent": 110,
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "claude-fable-5-2": {
+      "provider": "anthropic",
+      "input": 8,
+      "output": 40,
+      "cache_read": 0.2,
+      "cache_write": 10,
+      "cache_write_1h": 16,
+      "fast_percent": 200,
+      "status": "active",
+      "checked": "2026-11-14",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "claude-haiku-4-5": {
+      "provider": "anthropic",
+      "input": 1,
+      "output": 5,
+      "cache_read": 0.1,
+      "cache_write": 1.25,
+      "cache_write_1h": 2,
+      "aliases": [
+        "claude-haiku-4-5-20251001"
+      ],
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "claude-haiku-5-5": {
+      "provider": "anthropic",
+      "input": 0.1,
+      "output": 0.5,
+      "cache_read": 0.01,
+      "cache_write": 0.125,
+      "cache_write_1h": 0.2,
+      "long_context": {
+        "above_input_tokens": 100000,
+        "input": 0.5,
+        "cache_read": 0.05,
+        "output": 2.5,
+        "cache_write": 0.625,
+        "cache_write_1h": 1
+      },
+      "us_geo_percent": 110,
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "notes": [
+        "long_context cache writes derived from Anthropic's rule (1.25x input for 5 minutes, 2x for 1 hour)"
+      ]
+    },
+    "claude-opus-4-5": {
+      "provider": "anthropic",
+      "input": 5,
+      "output": 25,
+      "cache_read": 0.5,
+      "cache_write": 6.25,
+      "cache_write_1h": 10,
+      "aliases": [
+        "claude-opus-4-5-20251101"
+      ],
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "claude-opus-4-6": {
+      "provider": "anthropic",
+      "input": 5,
+      "output": 25,
+      "cache_read": 0.5,
+      "cache_write": 6.25,
+      "cache_write_1h": 10,
+      "us_geo_percent": 110,
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "claude-opus-4-7": {
+      "provider": "anthropic",
+      "input": 5,
+      "output": 25,
+      "cache_read": 0.5,
+      "cache_write": 6.25,
+      "cache_write_1h": 10,
+      "us_geo_percent": 110,
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "claude-opus-4-8": {
+      "provider": "anthropic",
+      "input": 5,
+      "output": 25,
+      "cache_read": 0.5,
+      "cache_write": 6.25,
+      "cache_write_1h": 10,
+      "fast_percent": 200,
+      "us_geo_percent": 110,
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "claude-opus-5-5": {
+      "provider": "anthropic",
+      "input": 4,
+      "output": 20,
+      "cache_read": 0.2,
+      "cache_write": 5,
+      "cache_write_1h": 8,
+      "fast_percent": 200,
+      "us_geo_percent": 110,
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "claude-sonnet-4-5": {
+      "provider": "anthropic",
+      "input": 3,
+      "output": 15,
+      "cache_read": 0.3,
+      "cache_write": 3.75,
+      "cache_write_1h": 6,
+      "aliases": [
+        "claude-sonnet-4-5-20250929"
+      ],
+      "status": "deprecated",
+      "checked": "2026-10-26",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "claude-sonnet-4-6": {
+      "provider": "anthropic",
+      "input": 3,
+      "output": 15,
+      "cache_read": 0.3,
+      "cache_write": 3.75,
+      "cache_write_1h": 6,
+      "us_geo_percent": 110,
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "claude-sonnet-5-5": {
+      "provider": "anthropic",
+      "input": 2,
+      "output": 10,
+      "cache_read": 0.1,
+      "cache_write": 2.5,
+      "cache_write_1h": 4,
+      "us_geo_percent": 110,
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "gpt-4.1": {
+      "provider": "openai",
+      "input": 2,
+      "output": 8,
+      "cache_read": 0.5,
+      "cache_write": null,
+      "aliases": [
+        "gpt-4.1-2025-04-14"
+      ],
+      "status": "deprecated",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-4.1-mini": {
+      "provider": "openai",
+      "input": 0.4,
+      "output": 1.6,
+      "cache_read": 0.1,
+      "cache_write": null,
+      "aliases": [
+        "gpt-4.1-mini-2025-04-14"
+      ],
+      "status": "deprecated",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-4o": {
+      "provider": "openai",
+      "input": 2.5,
+      "output": 10,
+      "cache_read": 1.25,
+      "cache_write": null,
+      "aliases": [
+        "gpt-4o-2024-08-06",
+        "gpt-4o-2024-11-20"
+      ],
+      "status": "deprecated",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-4o-mini": {
+      "provider": "openai",
+      "input": 0.15,
+      "output": 0.6,
+      "cache_read": 0.075,
+      "cache_write": null,
+      "aliases": [
+        "gpt-4o-mini-2024-07-18"
+      ],
+      "status": "deprecated",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-5": {
+      "provider": "openai",
+      "input": 1.25,
+      "output": 10,
+      "cache_read": 0.125,
+      "cache_write": null,
+      "status": "deprecated",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-5-mini": {
+      "provider": "openai",
+      "input": 0.25,
+      "output": 2,
+      "cache_read": 0.025,
+      "cache_write": null,
+      "status": "deprecated",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-5-nano": {
+      "provider": "openai",
+      "input": 0.05,
+      "output": 0.4,
+      "cache_read": 0.005,
+      "cache_write": null,
+      "status": "deprecated",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-5.1": {
+      "provider": "openai",
+      "input": 1.25,
+      "output": 10,
+      "cache_read": 0.125,
+      "cache_write": null,
+      "status": "deprecated",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-5.2": {
+      "provider": "openai",
+      "input": 1.75,
+      "output": 14,
+      "cache_read": 0.175,
+      "cache_write": null,
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-5.3-codex": {
+      "provider": "openai",
+      "input": 1.75,
+      "output": 14,
+      "cache_read": 0.175,
+      "cache_write": null,
+      "status": "deprecated",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-5.4": {
+      "provider": "openai",
+      "input": 2.5,
+      "output": 15,
+      "cache_read": 0.25,
+      "cache_write": null,
+      "long_context": {
+        "above_input_tokens": 272000,
+        "input": 5,
+        "cache_read": 0.5,
+        "output": 22.5,
+        "cache_write": null
+      },
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-5.4-mini": {
+      "provider": "openai",
+      "input": 0.75,
+      "output": 4.5,
+      "cache_read": 0.075,
+      "cache_write": null,
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-5.5": {
+      "provider": "openai",
+      "input": 5,
+      "output": 30,
+      "cache_read": 0.5,
+      "cache_write": null,
+      "long_context": {
+        "above_input_tokens": 272000,
+        "input": 10,
+        "cache_read": 1,
+        "output": 45,
+        "cache_write": null
+      },
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-5.6-luna": {
+      "provider": "openai",
+      "input": 0.2,
+      "output": 1.2,
+      "cache_read": 0.02,
+      "cache_write": null,
+      "long_context": {
+        "above_input_tokens": 272000,
+        "input": 0.4,
+        "cache_read": 0.04,
+        "output": 1.8,
+        "cache_write": null
+      },
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-5.6-sol": {
+      "provider": "openai",
+      "input": 4,
+      "output": 20,
+      "cache_read": 0.4,
+      "cache_write": 5,
+      "long_context": {
+        "above_input_tokens": 272000,
+        "input": 8,
+        "cache_read": 0.8,
+        "output": 30,
+        "cache_write": 10
+      },
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing",
+      "notes": [
+        "cache_write is the shorter-lived cache price ($5); Codex logs one cache-write count",
+        "long_context.cache_write derived: base cache write scaled like input"
+      ]
+    },
+    "gpt-5.6-terra": {
+      "provider": "openai",
+      "input": 2,
+      "output": 12,
+      "cache_read": 0.2,
+      "cache_write": null,
+      "long_context": {
+        "above_input_tokens": 272000,
+        "input": 4,
+        "cache_read": 0.4,
+        "output": 18,
+        "cache_write": null
+      },
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-6-astra": {
+      "provider": "openai",
+      "input": 10,
+      "output": 50,
+      "cache_read": 1,
+      "cache_write": 12.5,
+      "long_context": {
+        "above_input_tokens": 272000,
+        "input": 20,
+        "cache_read": 2,
+        "output": 75,
+        "cache_write": 25
+      },
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing",
+      "notes": [
+        "cache_write is the shorter-lived cache price ($12.50); Codex logs one cache-write count",
+        "long_context.cache_write derived: base cache write scaled like input"
+      ]
+    },
+    "gpt-6-luna": {
+      "provider": "openai",
+      "input": 0.1,
+      "output": 0.5,
+      "cache_read": 0.01,
+      "cache_write": null,
+      "long_context": {
+        "above_input_tokens": 272000,
+        "input": 0.2,
+        "cache_read": 0.02,
+        "output": 0.75,
+        "cache_write": null
+      },
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-6-sol": {
+      "provider": "openai",
+      "input": 2,
+      "output": 10,
+      "cache_read": 0.2,
+      "cache_write": null,
+      "long_context": {
+        "above_input_tokens": 272000,
+        "input": 4,
+        "cache_read": 0.4,
+        "output": 15,
+        "cache_write": null
+      },
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    "gpt-6.1-sol": {
+      "provider": "openai",
+      "input": 2,
+      "output": 10,
+      "cache_read": 0.1,
+      "cache_write": 2.5,
+      "long_context": {
+        "above_input_tokens": 272000,
+        "input": 4,
+        "cache_read": 0.2,
+        "output": 15,
+        "cache_write": 5
+      },
+      "status": "active",
+      "checked": "2026-10-26",
+      "source": "https://developers.openai.com/api/docs/pricing",
+      "notes": [
+        "cache_write is the shorter-lived cache price ($2.50); Codex logs one cache-write count",
+        "long_context.cache_write derived: base cache write scaled like input"
+      ]
+    }
+  }
+}

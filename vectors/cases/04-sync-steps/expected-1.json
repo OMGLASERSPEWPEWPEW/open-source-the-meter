@@ -1,0 +1,107 @@
+{
+ "by_day": [
+  {
+   "cost_nano": 60000000,
+   "day": "2026-11-10",
+   "events": 2,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "0.06"
+  }
+ ],
+ "ceilings": [
+  {
+   "account": "aaaaaaaa",
+   "band_high_usd": "0.32",
+   "band_low_usd": "0.29",
+   "ceiling_nano": 300000000,
+   "ceiling_usd": "0.30",
+   "change_note": "first window",
+   "change_pct": null,
+   "change_within_band": null,
+   "family": "claude",
+   "firm": true,
+   "percent": 20,
+   "reading_at": "2026-11-10T10:06:00.000Z",
+   "reading_source": "statusline",
+   "resets_at": "2026-11-13T19:00:00.000Z",
+   "spend_nano": 60000000,
+   "spend_usd": "0.06",
+   "start": "2026-11-06T19:00:00.000Z",
+   "unattributed_usd": "0.00",
+   "unpriced_events": 0,
+   "window": "seven_day"
+  }
+ ],
+ "events": [
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-10T10:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 20000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_s_1:req_s_1",
+   "model": "claude-opus-5-5",
+   "output": 1000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-s1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-10T10:05:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 40000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_s_2:req_s_2",
+   "model": "claude-opus-5-5",
+   "output": 2000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-s1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  }
+ ],
+ "readings": [
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-10T10:06:00.000Z",
+   "family": "claude",
+   "percent": 20,
+   "resets_at": "2026-11-13T19:00:00.000Z",
+   "source": "statusline",
+   "window": "seven_day"
+  }
+ ],
+ "spec": "1",
+ "totals": [
+  {
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 60000000,
+   "events": 2,
+   "input": 0,
+   "model": "claude-opus-5-5",
+   "output": 3000,
+   "priced": true,
+   "reasoning": 0,
+   "source": "claude_code",
+   "usd": "0.06",
+   "web_search": 0
+  }
+ ]
+}

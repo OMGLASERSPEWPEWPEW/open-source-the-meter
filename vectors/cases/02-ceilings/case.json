@@ -1,0 +1,7 @@
+{
+  "tz": "UTC",
+  "prices": "../../prices.json",
+  "claude_dir": "claude",
+  "quota_file": "quota.jsonl",
+  "description": "Implied ceilings per account and window: band, firm, week over week, early reset, unattributed spend, limit hit, manual reading, five-hour window."
+}
