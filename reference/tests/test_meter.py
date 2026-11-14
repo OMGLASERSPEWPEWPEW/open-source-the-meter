@@ -99,9 +99,11 @@ class MCP(TempHome):
         self.assertEqual(len(out), 4)  # the notification gets no answer
         self.assertEqual(out[0]["result"]["protocolVersion"], "2025-06-18")
         self.assertEqual({t["name"] for t in out[1]["result"]["tools"]},
-                         {"meter_summary", "meter_ceiling", "meter_record_quota", "meter_status", "meter_yield"})
+                         {"meter_summary", "meter_ceiling", "meter_record_quota", "meter_status", "meter_yield", "meter_chart"})
         self.assertEqual(out[2]["result"]["structuredContent"]["total_usd"], "2.00")
-        self.assertTrue(out[2]["result"]["content"][0]["text"].startswith("Data from this machine's local logs"))
+        text = out[2]["result"]["content"][0]["text"]
+        self.assertTrue(text.startswith("You used"), "the trend sentence leads")
+        self.assertIn("Data from this machine's local logs", text)
         self.assertEqual(out[3]["error"]["code"], -32601)
 
     def test_unknown_version_and_bad_input(self):
@@ -475,13 +477,153 @@ class RoundTwo(TempHome):
         with contextlib.redirect_stdout(out):
             self.assertEqual(cli.main(["ceiling", "--count", "9", "--tz", "UTC"]), 0)
         text = out.getvalue()
-        for words in ("account unknown", "Unattributed $", "6.00", "overlaps the last window", "(unknown)", "-15.5%"):
+        for words in ("account unknown", "Unattributed $", "6.00", "an early reset", "(unknown)", "-15.5%", "not enough data"):
             self.assertIn(words, text)
+
+
+class Picture(TempHome):
+    """The charts and trends (SPEC.md §9.1, §11.3), beyond what vector 07 pins."""
+
+    def test_sparkline_edges(self):
+        self.assertEqual(analysis.sparkline([], True), "")
+        self.assertEqual(analysis.sparkline([0, 0], True), "\u2581\u2581")
+        self.assertEqual(analysis.sparkline([5, 5], False), "\u2584\u2584")
+        self.assertEqual(analysis.sparkline([0, 7, 14], False), "\u2581\u2585\u2588")
+
+    def test_spend_direction_thresholds(self):
+        from meterlib.util import parse_time_ms
+        now = parse_time_ms("2026-11-08T20:00:00Z")
+        def trend(last, prior):
+            evs = [{"source": "claude_code", "at": now - 3 * 86400000, "cost_nano": last, "key": "a"},
+                   {"source": "claude_code", "at": now - 10 * 86400000, "cost_nano": prior, "key": "b"}]
+            return analysis.spend_trend(evs, now, None)
+        self.assertEqual(trend(105, 100)["direction"], "up")       # +5.0 is up
+        self.assertEqual(trend(104, 100)["direction"], "flat")
+        self.assertEqual(trend(95, 100)["direction"], "down")      # -5.0 is down
+        self.assertIsNone(trend(10, 0)["direction"])               # nothing to compare with
+        self.assertEqual(len(trend(1, 1)["days"]), 30)
+
+    def test_within_rounding_is_never_called_a_fall(self):
+        rows = [{"family": "claude", "window": "seven_day", "account": "a", "resets_at": "2026-10-04T19:00:00.000Z",
+                 "ceiling_nano": 100, "ceiling_usd": "100.00", "band_low_usd": "95.00", "band_high_usd": "105.00",
+                 "firm": True, "shown": True, "unattributed_usd": "0.00", "change_note": None},
+                {"family": "claude", "window": "seven_day", "account": "a", "resets_at": "2026-10-11T19:00:00.000Z",
+                 "ceiling_nano": 97, "ceiling_usd": "97.00", "band_low_usd": "92.00", "band_high_usd": "102.00",
+                 "firm": True, "shown": True, "unattributed_usd": "0.00", "change_note": None}]
+        t = analysis.ceiling_trends(rows)[0]
+        self.assertEqual((t["change_pct"], t["direction"]), ("-3.0", "within rounding"))
+
+    def _seeded(self):
+        case = os.path.join(REPO, "vectors", "cases", "07-trends")
+        shutil.copytree(os.path.join(case, "claude"), os.path.join(self.tmp, "claude", "projects"), dirs_exist_ok=True)
+        os.makedirs(os.environ["OPEN_METER_HOME"], exist_ok=True)
+        shutil.copyfile(os.path.join(case, "quota.jsonl"), os.path.join(os.environ["OPEN_METER_HOME"], "quota.jsonl"))
+        from meterlib.util import parse_time_ms
+        return Meter(tz="UTC", now=parse_time_ms("2026-11-08T20:00:00Z"))
+
+    def test_chart_files_are_private_scriptless_and_exact(self):
+        m = self._seeded()
+        r = m.chart("svg")
+        self.assertEqual(r["path"], os.path.join(os.environ["OPEN_METER_HOME"], "meter-chart.svg"))
+        self.assertEqual(os.stat(r["path"]).st_mode & 0o777, 0o600)
+        svg = read_text(r["path"])
+        self.assertTrue(svg.startswith("<svg") and "<script" not in svg and "http://" not in svg.replace("http://www.w3.org/2000/svg", ""))
+        self.assertIn("down 23.6% since Oct 4", svg)
+        self.assertIn("$76.36", svg)                      # the last point's tooltip carries the exact value
+        self.assertEqual(r["spend_sparkline"], "\u2587" * 23 + "\u2588" * 7)
+        page = read_text(m.chart("html")["path"])
+        self.assertLess(page.index("<svg"), page.index("<table"), "the picture before the tables")
+        self.assertNotIn("<script", page)
+
+    def test_mcp_chart_tool_and_trend_lead(self):
+        m = self._seeded()
+        out = io.StringIO()
+        mcp.serve(m, io.BytesIO(b"".join(json.dumps(x).encode() + b"\n" for x in (
+            {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "meter_chart", "arguments": {"format": "svg"}}},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "meter_ceiling", "arguments": {}}}))), out)
+        chart, ceiling = [json.loads(line)["result"] for line in out.getvalue().splitlines()]
+        self.assertTrue(chart["structuredContent"]["path"].endswith("meter-chart.svg"))
+        self.assertTrue(chart["content"][0]["text"].startswith("Your plan's week is worth about $76"))
+        self.assertTrue(ceiling["content"][0]["text"].startswith("Your plan's week is worth about $76 of API use, down 23.6%"))
+
+    def test_cli_leads_with_the_trend(self):
+        import contextlib
+        from meterlib import cli
+        self._seeded()
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(cli.main(["chart", "--tz", "UTC", "--out", os.path.join(self.tmp, "c.svg")]), 0)
+        self.assertIn("Wrote %s" % os.path.join(self.tmp, "c.svg"), out.getvalue())
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(cli.main(["summary", "--tz", "UTC"]), 0)
+        self.assertTrue(out.getvalue().startswith("You used"), out.getvalue()[:80])
+
+
+class StrangerTest(TempHome):
+    """Findings from a fresh session following the README on real logs, 2026-11-14."""
+
+    def row(self, **kw):
+        base = {"family": "claude", "window": "seven_day", "account": "", "resets_at": 0, "percent": 50, "at": 0,
+                "source": "statusline"}
+        base.update(kw)
+        return base
+
+    def test_an_early_or_mostly_unattributed_week_is_not_enough_data(self):
+        from meterlib.util import parse_time_ms
+        r = parse_time_ms("2026-11-13T19:00:00Z") // 1000
+        ev = lambda acct, cost, key: {"source": "claude_code", "account": acct, "at": (r - 86400) * 1000, "cost_nano": cost, "key": key}
+        rows = analysis.ceilings([ev("a", 1_000_000_000, "1"), ev("", 50_000_000_000, "2")],
+                                 [self.row(account="a", resets_at=r, percent=100, at=(r - 3600) * 1000)])
+        self.assertEqual((rows[0]["shown"], rows[0]["ceiling_usd"], rows[0]["band_low_usd"]), (False, None, None))
+        self.assertIn("not enough data", rows[0]["change_note"])
+        early = analysis.ceilings([ev("a", 1_000_000_000, "1")], [self.row(account="a", resets_at=r, percent=6, at=(r - 3600) * 1000)])
+        self.assertEqual((early[0]["shown"], early[0]["ceiling_usd"]), (False, None))
+        self.assertIn("under 20%", early[0]["change_note"])
+
+    def test_an_early_reset_is_told_apart_from_two_schedules(self):
+        from meterlib.util import parse_time_ms
+        def r(s):
+            return parse_time_ms(s) // 1000
+        ev = [{"source": "claude_code", "account": "a", "at": (r("2026-11-01T00:00:00Z") + i * 21600) * 1000,
+               "cost_nano": 1_000_000_000, "key": str(i)} for i in range(120)]
+        def notes(resets):
+            rows = analysis.ceilings(ev, [self.row(account="a", resets_at=x, percent=50, at=(x - 3600) * 1000) for x in resets])
+            return [x["change_note"] for x in rows]
+        early = notes([r("2026-11-07T11:00:00Z"), r("2026-11-09T13:00:00Z"), r("2026-11-16T13:00:00Z")])
+        self.assertIn("early reset", early[1])
+        mixed = notes([r("2026-11-07T11:00:00Z"), r("2026-11-09T13:00:00Z"), r("2026-11-14T11:00:00Z"), r("2026-11-16T13:00:00Z")])
+        self.assertTrue(all("two reset schedules" in n for n in mixed[1:]), mixed)
+        # A real early reset with two weeks on each side: Sundays, then a Wednesday reset, then Wednesdays.
+        two_sides = notes([r("2026-10-04T19:00:00Z"), r("2026-10-11T19:00:00Z"), r("2026-10-18T19:00:00Z"),
+                           r("2026-10-21T19:00:00Z"), r("2026-10-28T19:00:00Z"), r("2026-11-04T19:00:00Z")])
+        self.assertIn("early reset", two_sides[3])
+        # A reset time that moves a few seconds across the 10-minute grouping is one window, read twice.
+        wobble = notes([r("2026-11-07T11:04:58Z"), r("2026-11-07T11:05:02Z")])
+        self.assertIn("same window", wobble[1])
+
+    def test_sync_and_status_count_readings_the_same_way_and_say_repeats_plainly(self):
+        import contextlib
+        from meterlib import cli
+        self.add_claude([assistant("m1", "2026-11-10T10:00:00Z", 1000)] * 3)
+        quota = os.path.join(os.environ["OPEN_METER_HOME"], "quota.jsonl")
+        os.makedirs(os.path.dirname(quota), exist_ok=True)
+        line = {"at": "2026-11-10T10:00:00Z", "source": "statusline", "family": "claude", "window": "seven_day",
+                "percent": 30, "resets_at": 1795258800, "session": "s1"}
+        with open(quota, "w") as fh:
+            fh.write(json.dumps(line) + "\n" + json.dumps(line) + "\n")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            cli.main(["sync"])
+        text = out.getvalue()
+        self.assertIn("2 repeated log lines for one response, skipped so nothing counts twice", text)
+        self.assertIn("1 plan reading", text)
+        self.assertEqual(sum(r["count"] for r in self.meter().status()["readings"]), 1)
 
 
 class Vectors(unittest.TestCase):
     def test_reference_passes_every_vector(self):
-        done = subprocess.run([sys.executable, "-I", os.path.join(REPO, "vectors", "run.py")], capture_output=True,
+        done = subprocess.run([sys.executable, "-B", "-I", os.path.join(REPO, "vectors", "run.py")], capture_output=True,
                               timeout=300)
         self.assertEqual(done.returncode, 0, done.stdout.decode() + done.stderr.decode())
 

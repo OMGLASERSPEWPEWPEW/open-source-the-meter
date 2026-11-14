@@ -3,5 +3,6 @@
   "prices": "../../prices.json",
   "claude_dir": "claude",
   "quota_file": "quota.jsonl",
+  "now": "2026-11-16T12:00:00Z",
   "description": "Implied ceilings per account and window: band, firm, week over week, early reset, unattributed spend, limit hit, manual reading, five-hour window."
 }

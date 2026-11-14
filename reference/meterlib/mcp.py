@@ -65,6 +65,17 @@ TOOLS = [
         },
     },
     {
+        "name": "meter_chart",
+        "description": "Draw the picture: write the headline and two line charts (the plan's weekly ceiling, and "
+                       "API-equivalent dollars per day) to one file in ~/.open-meter, an SVG, or HTML with the detail "
+                       "tables, and return its path so the person can open it.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"format": {"type": "string", "enum": ["svg", "html"], "default": "svg"}},
+            "additionalProperties": False,
+        },
+    },
+    {
         "name": "meter_status",
         "description": "What the meter reads and where: log folders, file and event counts, plan readings, unpriced "
                        "models, the price list's date.",
@@ -150,6 +161,8 @@ def _call(meter: Meter, name: str, args: dict):
                                   args.get("family", "claude"))
     if name == "meter_status":
         return meter.status()
+    if name == "meter_chart":
+        return meter.chart(args.get("format", "svg"))
     if name == "meter_yield":
         return meter.git_yield(args.get("repo", ""), args.get("period", "30d"), args.get("since"), args.get("until"))
     raise MeterError("unknown tool: %s" % clean_text(name, 60))
@@ -169,7 +182,14 @@ def _fit(result: dict) -> dict:
 
 
 def _text(result: dict) -> str:
-    return DATA_NOTE + "\n" + json.dumps(result, indent=1, ensure_ascii=False)
+    """The trend sentence and its sparkline first, when there is one, then the data note and the JSON."""
+    lead = ""
+    trend = result.get("trend") if isinstance(result.get("trend"), dict) else None
+    if trend and trend.get("sentence"):
+        lead = trend["sentence"] + ("\n" + trend["sparkline"] if trend.get("sparkline") else "") + "\n\n"
+    elif result.get("path") and result.get("headline"):
+        lead = "%s\n%s\nWrote %s (open it in a browser or Quick Look).\n\n" % (result["headline"], result["spend"], result["path"])
+    return lead + DATA_NOTE + "\n" + json.dumps(result, indent=1, ensure_ascii=False)
 
 
 def handle(meter: Meter, msg: dict):

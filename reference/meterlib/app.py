@@ -20,7 +20,8 @@ class MeterError(Exception):
 
 
 class Meter:
-    def __init__(self, db_path=None, claude_roots=None, codex_roots=None, quota_file=None, prices_path=None, tz=None):
+    def __init__(self, db_path=None, claude_roots=None, codex_roots=None, quota_file=None, prices_path=None, tz=None,
+                 now=None):
         self.home = meter_home()
         self.db_path = db_path or os.path.join(self.home, "meter.db")
         self.claude_roots = claude_roots if claude_roots is not None else sources.claude_roots()
@@ -28,6 +29,7 @@ class Meter:
         self.quota_file = quota_file or os.path.join(self.home, "quota.jsonl")
         self.prices = Prices.load(prices_path)
         self.tz = parse_tz(tz)
+        self.fixed_now = now   # ms; for a reproducible picture (the README's image), else the clock
         self._conn = None
 
     @property
@@ -61,7 +63,7 @@ class Meter:
         return parse_time_ms(text)
 
     def period(self, period="7d", since=None, until=None):
-        now = now_ms()
+        now = self.now()
         end = self._bound(until, True) if until else now
         if end is None:
             raise MeterError("until must be a date like 2026-11-14 or a time like 2026-11-14T09:00:00Z")
@@ -119,7 +121,16 @@ class Meter:
         for g in rows:
             g["usd"] = usd(g["cost_nano"])
         unpriced = sorted({clean_text(ev["model"]) for ev in events if ev["cost_nano"] is None})
+        from . import charts
+        spend = analysis.spend_trend(self._events(self.now() - 40 * DAY_MS, None), self.now(), self.tz)
+        trend = {"sentence": charts.spend_sentence({"last_7d_usd": spend["last_7d_usd"],
+                                                    "spend_change_pct": spend["change_pct"],
+                                                    "spend_direction": spend["direction"]}),
+                 "sparkline": spend["sparkline"], "last_7d_usd": spend["last_7d_usd"],
+                 "prior_7d_usd": spend["prior_7d_usd"], "change_pct": spend["change_pct"],
+                 "direction": spend["direction"]}
         return {
+            "trend": trend,
             "since": format_time_ms(start), "until": format_time_ms(end), "group_by": group_by,
             "total_usd": usd(total), "total_nano": total, "events": len(events),
             "cache_read_share_pct": cache_share, "unpriced_models": unpriced,
@@ -140,7 +151,8 @@ class Meter:
         start = min(r["resets_at"] for r in readings) * 1000 - length * 1000
         keep = max(1, min(int(count), 52))
         rows, per_account = [], {}
-        for row in reversed(analysis.ceilings(self._events(start, None), readings, ledger.several_accounts(self.conn))):
+        all_rows = analysis.ceilings(self._events(start, None), readings, ledger.several_accounts(self.conn))
+        for row in reversed(all_rows):
             n = per_account.get(row["account"], 0)
             if n < keep:
                 per_account[row["account"]] = n + 1
@@ -148,18 +160,82 @@ class Meter:
         rows.reverse()
         elsewhere = ("claude.ai, the desktop app, other machines" if family == "claude"
                      else "other machines, Codex in the cloud")
-        return {"family": family, "window": window, "windows": rows, "accounts": sorted(per_account),
+        from . import charts
+        trends = analysis.ceiling_trends(all_rows)
+        who = analysis.short_account(self._current_account(family))
+        mine = next((t for t in trends if t["account"] == who), None)   # the account in use now, never another
+        headline = {"ceiling_usd": mine["last_ceiling_usd"] if mine else None,
+                    "change_pct": mine["change_pct"] if mine else None,
+                    "direction": mine["direction"] if mine else None, "since": mine["first_resets_at"] if mine else None}
+        sentence = charts.ceiling_sentence(headline, self.tz)
+        if family == "codex":
+            sentence = sentence.replace("Your plan's week", "Your Codex plan's %s" % ("week" if window == "seven_day" else "window"))
+        elif window != "seven_day":
+            sentence = sentence.replace("Your plan's week", "Your plan's five-hour window")
+        return {"family": family, "window": window,
+                "trend": {"sentence": sentence, "sparkline": mine["sparkline"] if mine else "",
+                          "account": mine["account"] if mine else who},
+                "trends": trends, "windows": rows, "accounts": sorted(per_account),
                 "current_account": analysis.short_account(self._current_account(family)),
                 "note": "Lower bound if you also use this plan elsewhere (%s)." % elsewhere}
 
+    # --- the picture ---------------------------------------------------------------------------------------------
+
+    def now(self) -> int:
+        return self.fixed_now if self.fixed_now is not None else now_ms()
+
+    def chart_data(self) -> dict:
+        """What the charts plot, exactly the ledger's numbers (SPEC.md §11.3)."""
+        self.sync()
+        now = self.now()
+        readings = [r for r in ledger.all_readings(self.conn) if r["family"] == "claude" and r["window"] == "seven_day"]
+        start = min([r["resets_at"] * 1000 - 8 * DAY_MS for r in readings] + [now - 40 * DAY_MS])
+        events = self._events(start, None)
+        rows = analysis.ceilings(events, readings, ledger.several_accounts(self.conn))
+        data = analysis.chart_data(events, rows, now, self.tz)
+        per = {}
+        for r in rows:
+            per.setdefault(r["account"], []).append(r)
+        data["rows"] = [r for acct in sorted(per) for r in per[acct][-6:]]   # the last 6 weeks of each account
+        return data
+
+    def chart(self, fmt: str = "svg", out=None, caption=None) -> dict:
+        """Write the headline and both charts to one self-contained file (SVG, or HTML with the tables too) in the
+        meter's home, and say where it is."""
+        from . import charts
+        if fmt not in ("svg", "html"):
+            raise MeterError("format must be svg or html")
+        data = self.chart_data()
+        path = os.path.abspath(os.path.expanduser(out)) if out else os.path.join(self.home, "meter-chart.%s" % fmt)
+        if os.path.isdir(path):
+            path = os.path.join(path, "meter-chart.%s" % fmt)
+        if os.path.basename(path) in ("meter.db", "quota.jsonl") or path.endswith((".db", ".jsonl")):
+            raise MeterError("--out must be a new .svg or .html file, not the meter's own data")
+        caption = caption or "The meter, from this machine's local logs · API list prices checked %s · drawn %s" % (
+            self.prices.checked, format_time_ms(self.now())[:16].replace("T", " ") + " UTC")
+        if fmt == "svg":
+            text = charts.standalone_svg(data, self.tz, caption)
+        else:
+            from . import dashboard
+            text = dashboard.page_from(self, data, caption)
+        try:
+            write_private(path, text)
+        except OSError as exc:
+            raise MeterError("couldn't write %s (%s)" % (path, exc.strerror or exc.__class__.__name__))
+        return {"path": path, "format": fmt,
+                "headline": charts.ceiling_sentence(data["headline"], self.tz),
+                "spend": charts.spend_sentence(data["headline"]),
+                "spend_sparkline": data["spend_sparkline"], "ceiling_sparkline": data["ceiling_sparkline"]}
+
     def _current_account(self, family) -> str:
-        """The account of the most recent request: the one in use now."""
+        """The account of the most recent request, resolved as every report resolves it (SPEC.md §3.7)."""
         source = analysis.FAMILY_SOURCE[family]
-        row = self.conn.execute("SELECT account, session FROM events WHERE source = ? ORDER BY at DESC LIMIT 1",
-                                (source,)).fetchone()
+        row = self.conn.execute("SELECT account, session FROM events WHERE source = ? AND at <= ? "
+                                "ORDER BY at DESC, key DESC LIMIT 1", (source, self.now())).fetchone()
         if not row:
             return ""
-        return row[0] or ledger.session_accounts(self.conn).get(row[1], "")
+        return (row[0] or ledger.session_accounts(self.conn).get(row[1], "")
+                or ledger.sole_accounts(self.conn).get(source, ""))
 
     def _no_readings_note(self, family):
         if family == "codex":
@@ -251,7 +327,10 @@ class Meter:
         stats = self.sync()
         conn = self.conn
         counts = dict(conn.execute("SELECT source, COUNT(*) FROM events GROUP BY source").fetchall())
-        readings = conn.execute("SELECT family, source, COUNT(*) FROM readings GROUP BY family, source").fetchall()
+        tally = {}
+        for r in ledger.all_readings(conn):   # distinct readings, as sync counts them (SPEC.md §6.6)
+            tally[(r["family"], r["source"])] = tally.get((r["family"], r["source"]), 0) + 1
+        readings = [(f, s, n) for (f, s), n in sorted(tally.items())]
         models = [m for (m,) in conn.execute("SELECT DISTINCT model FROM events").fetchall()]
         meta = dict(conn.execute("SELECT key, value FROM meta").fetchall())
 
@@ -270,3 +349,26 @@ class Meter:
             "this_sync": {"files_read": stats.files, "new_events": stats.new_events, "new_readings": stats.new_readings},
             "prices_checked": self.prices.checked,
         }
+
+
+def write_private(path: str, text: str) -> None:
+    """Write a whole file only this user can read (0600), atomically: a temp file in the same folder, then rename."""
+    import tempfile
+    folder = os.path.dirname(os.path.abspath(path))
+    if os.path.abspath(folder) == os.path.abspath(meter_home()):
+        from .util import private_dir
+        private_dir(folder)
+    else:
+        os.makedirs(folder, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=".meter-", dir=folder)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise

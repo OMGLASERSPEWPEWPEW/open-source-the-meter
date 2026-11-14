@@ -59,8 +59,8 @@ Run the checks in docs/security.md, section "The audit", and report what each on
 
 Then run the tests and the vectors. They use temporary folders and never touch the person's real logs:
 
-    python3 -I -m unittest discover -s reference/tests
-    python3 -I vectors/run.py
+    python3 -B -I -m unittest discover -s reference/tests
+    python3 -B -I vectors/run.py
 
 On macOS, if python3 isn't set up yet, the first run may ask to install Apple's command line tools. That is
 Apple's installer, not this repository's; tell the person what it is before they accept it.
@@ -72,16 +72,19 @@ Report the results, then ask how they want to go on.
 - Use the reference (it needs python3, version 3.9 or later; macOS has it at /usr/bin/python3 once Apple's command
   line tools are installed).
 - Or build their own meter in a runtime this machine already has (Node, Go, Rust, Swift, ...), standard library
-  only, from SPEC.md. It must pass every case in vectors/ before it is used: run python3 -I vectors/run.py --
+  only, from SPEC.md. It must pass every case in vectors/ before it is used: run python3 -B -I vectors/run.py --
   <your command>, or if there's no Python, write your own comparison of your conformance output with each case's
   expected.json, by value, as SPEC.md section 12 describes.
 
 ## Step 4: A look before any change
 
-With the person's yes, show their numbers without installing anything. Use a throwaway home and delete it after,
-so nothing is left behind:
+With the person's yes, show their numbers as a picture without installing anything. Use a throwaway home and
+delete it after; the chart is written into this folder:
 
-    d="$(mktemp -d)"; OPEN_METER_HOME="$d" python3 -I reference/meter.py summary --period 30d; rm -rf "$d"
+    d="$(mktemp -d)"; OPEN_METER_HOME="$d" python3 -B -I reference/meter.py chart --out meter-chart.svg; rm -rf "$d"
+
+Tell the person to open meter-chart.svg (a browser, or Quick Look on a Mac). It holds their numbers; git ignores
+it, and they can delete it when done. For the details in text, run summary the same way.
 
 The first read of a large history can take a minute. Explain the numbers and their limits (README.md, "What the
 numbers mean").
@@ -90,29 +93,29 @@ numbers mean").
 
 Follow docs/install.md. Before each change, show exactly what will change and how to undo it.
 
-1. The first sync into ~/.open-meter: python3 -I reference/meter.py sync
+1. The first sync into ~/.open-meter: python3 -B -I reference/meter.py sync
 2. The MCP server, in the client the person uses. Claude Code and Codex have their own command (claude mcp add
    --scope user ..., codex mcp add ...). For Cursor or Claude Desktop use the meter's installer, which prints only
    the one entry it adds and never the rest of the file (other tools' keys can be in it):
-   python3 -I reference/meter.py mcp-install --client cursor            (shows the change; changes nothing)
-   python3 -I reference/meter.py mcp-install --client cursor --apply    (only after the person's yes)
+   python3 -B -I reference/meter.py mcp-install --client cursor            (shows the change; changes nothing)
+   python3 -B -I reference/meter.py mcp-install --client cursor --apply    (only after the person's yes)
    Never open those config files yourself.
 3. Optionally, the statusline wrapper, so the plan's used percent is recorded. Its dry run prints the person's
    current statusLine entry; say so before running it, since that entry is theirs.
-   python3 -I reference/meter.py statusline-install       (shows the change; changes nothing)
-   python3 -I reference/meter.py statusline-install --apply   (only after the person's yes)
+   python3 -B -I reference/meter.py statusline-install       (shows the change; changes nothing)
+   python3 -B -I reference/meter.py statusline-install --apply   (only after the person's yes)
    The status line will run reference/meter.py from this folder. If the folder moves, the old status line still
    shows, but readings stop: uninstall first, then move.
    Without the wrapper, the person can record a reading by hand (record-quota), and Codex records its own.
 
-Then verify: python3 -I reference/meter.py status, then summary, then ceiling. Show the person where everything
+Then verify: python3 -B -I reference/meter.py status, then summary, then ceiling. Show the person where everything
 went and how to undo it.
 
 ## Undo
 
-- python3 -I reference/meter.py statusline-uninstall --apply   (puts the old statusline back; backs up first)
+- python3 -B -I reference/meter.py statusline-uninstall --apply   (puts the old statusline back; backs up first)
 - remove the MCP entry: claude mcp remove open-meter --scope user, codex mcp remove open-meter, or
-  python3 -I reference/meter.py mcp-uninstall --client cursor --apply (or --client claude-desktop)
+  python3 -B -I reference/meter.py mcp-uninstall --client cursor --apply (or --client claude-desktop)
 - rm -rf ~/.open-meter   (the ledger, readings and backups; do it last)
 
 ## Later updates

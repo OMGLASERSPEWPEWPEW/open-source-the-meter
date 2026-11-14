@@ -34,7 +34,8 @@ def _print(obj, as_json: bool, text: str) -> None:
 
 def cmd_summary(m: Meter, a) -> None:
     s = m.summary(a.period, a.since, a.until, a.by)
-    text = "%s to %s · $%s at API list prices (checked %s) · %d requests" % (
+    text = "%s\n%s  (30 days)\n\n" % (s["trend"]["sentence"], s["trend"]["sparkline"])
+    text += "%s to %s · $%s at API list prices (checked %s) · %d requests" % (
         s["since"][:16], s["until"][:16], s["total_usd"], s["prices_checked"], s["events"])
     if s["cache_read_share_pct"]:
         text += " · %s%% of prompt tokens were cache reads" % s["cache_read_share_pct"]
@@ -48,11 +49,14 @@ def cmd_ceiling(m: Meter, a) -> None:
     c = m.ceiling(a.family, a.window, a.count)
     if not c["windows"]:
         return _print(c, a.json, c["note"])
+    lead = c["trend"]["sentence"] + ("\n%s  (recent weeks, account %s)" % (c["trend"]["sparkline"], c["trend"]["account"] or "unknown")
+                                     if c["trend"]["sparkline"] else "") + "\n\n"
     rows = []
     for w in c["windows"]:
         note = w["change_note"] or ("within rounding" if w["change_within_band"] else None)
         rows.append(dict(w, used="%s%%%s" % (w["percent"], "" if w["firm"] else " early"),
-                         band="%s – %s" % (w["band_low_usd"], w["band_high_usd"] or "∞"),
+                         ceiling_usd=w["ceiling_usd"] if w["shown"] else "not enough data",
+                         band=("%s – %s" % (w["band_low_usd"], w["band_high_usd"] or "∞")) if w["shown"] else None,
                          change=(w["change_pct"] + "%") if w["change_pct"] else None, ends=w["resets_at"][:16],
                          who=w["account"] or "(unknown)", note=note))
     cols = [("Account", "who"), ("Window ends", "ends"), ("Used", "used", ">"), ("Spent $", "spend_usd", ">"),
@@ -62,7 +66,15 @@ def cmd_ceiling(m: Meter, a) -> None:
     text = _table(rows, cols + [("Change", "change", ">"), ("Note", "note")])
     if c["note"]:
         text += "\n\n" + c["note"]
-    _print(c, a.json, text)
+    _print(c, a.json, lead + text)
+
+
+def cmd_chart(m: Meter, a) -> None:
+    r = m.chart("html" if a.html else "svg", a.out)
+    text = "%s\n%s\n\nSpend, last 30 days:   %s\nCeiling, recent weeks: %s\n\nWrote %s\nOpen it: open %s" % (
+        r["headline"], r["spend"], r["spend_sparkline"], r["ceiling_sparkline"] or "(no firm weeks yet)", r["path"],
+        r["path"])
+    _print(r, a.json, text)
 
 
 def cmd_record(m: Meter, a) -> None:
@@ -107,8 +119,13 @@ def cmd_conformance(a) -> None:
             commits = analysis.parse_git_log(fh.read())
         yield_case = {"commits": commits, "repo": a.repo, "since_ms": parse_time_ms(a.since),
                       "until_ms": parse_time_ms(a.until)}
+    now = None
+    if a.now:
+        now = parse_time_ms(a.now)
+        if now is None:
+            raise ValueError("--now must be a time like 2026-11-08T20:00:00Z")
     doc = analysis.conformance(events, ledger.all_readings(conn), parse_tz(a.tz), yield_case,
-                               ledger.several_accounts(conn))
+                               ledger.several_accounts(conn), now)
     print(json.dumps(doc, indent=1, sort_keys=True, ensure_ascii=False))
 
 
@@ -141,6 +158,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--resets-at", help="when the window resets: 2026-11-20T19:00:00-06:00, or Unix seconds")
     s.add_argument("--family", default="claude", choices=["claude", "codex"])
     common(sub.add_parser("status", help="what the meter reads and where"))
+    s = common(sub.add_parser("chart", help="write the headline and both line charts to one file and print its path"))
+    s.add_argument("--html", action="store_true", help="an HTML page with the charts and the detail tables (default: SVG)")
+    s.add_argument("--out", help="where to write it (default: ~/.open-meter/meter-chart.svg or .html)")
     common(sub.add_parser("sync", help="read new log lines into the ledger now"))
     s = common(sub.add_parser("yield", help="Level 2: commits and lines per API dollar for a repo"))
     s.add_argument("--repo", required=True)
@@ -171,6 +191,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--prices")
     s.add_argument("--tz", default="UTC")
     s.add_argument("--git-log")
+    s.add_argument("--now", help="reference time for the trend and chart parts")
     s.add_argument("--repo")
     s.add_argument("--since")
     s.add_argument("--until")
@@ -218,11 +239,14 @@ def main(argv=None) -> int:
             return 0
         if a.cmd == "sync":
             st = m.sync()
-            print("Read %d files: %d new events, %d duplicates skipped, %d plan readings, %d bad lines."
-                  % (st.files, st.new_events, st.duplicates, st.new_readings, st.bad_lines))
+            n = len(ledger.all_readings(m.conn))
+            print("Read %d files: %d new responses; %d repeated log lines for one response, skipped so nothing counts "
+                  "twice; %d plan reading%s in the ledger; %d line%s that weren't valid JSON."
+                  % (st.files, st.new_events, st.duplicates, n, "" if n == 1 else "s", st.bad_lines,
+                     "" if st.bad_lines == 1 else "s"))
             return 0
         {"summary": cmd_summary, "ceiling": cmd_ceiling, "record-quota": cmd_record, "status": cmd_status,
-         "yield": cmd_yield}[a.cmd](m, a)
+         "yield": cmd_yield, "chart": cmd_chart}[a.cmd](m, a)
         return 0
     except (MeterError, ValueError, ledger.LedgerError) as exc:
         print("meter: %s" % exc, file=sys.stderr)

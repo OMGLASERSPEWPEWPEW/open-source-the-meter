@@ -1,0 +1,8 @@
+{
+  "tz": "UTC",
+  "prices": "../../prices.json",
+  "claude_dir": "claude",
+  "quota_file": "quota.jsonl",
+  "now": "2026-11-08T20:00:00Z",
+  "description": "Trends and the chart: the 7-day spend change and direction, the weekly ceiling's change from its first to its last trusted week, the daily series with its 7-day average, the sparklines, the plotted points and the headline numbers."
+}

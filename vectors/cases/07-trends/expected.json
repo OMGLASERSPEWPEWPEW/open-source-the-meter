@@ -1,0 +1,1790 @@
+{
+ "by_day": [
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-09-28",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-09-29",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-09-30",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-01",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-02",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-03",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-04",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-05",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-06",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-07",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-08",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-09",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-10",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-11",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-12",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-13",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-14",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-15",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-16",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-17",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-18",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-19",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-20",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-21",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-22",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-23",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-24",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-25",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-26",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-27",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-28",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-29",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-30",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-10-31",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 5000000000,
+   "day": "2026-11-01",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "5.00"
+  },
+  {
+   "cost_nano": 6000000000,
+   "day": "2026-11-02",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "6.00"
+  },
+  {
+   "cost_nano": 6000000000,
+   "day": "2026-11-03",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "6.00"
+  },
+  {
+   "cost_nano": 6000000000,
+   "day": "2026-11-04",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "6.00"
+  },
+  {
+   "cost_nano": 6000000000,
+   "day": "2026-11-05",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "6.00"
+  },
+  {
+   "cost_nano": 6000000000,
+   "day": "2026-11-06",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "6.00"
+  },
+  {
+   "cost_nano": 6000000000,
+   "day": "2026-11-07",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "6.00"
+  },
+  {
+   "cost_nano": 6000000000,
+   "day": "2026-11-08",
+   "events": 1,
+   "source": "claude_code",
+   "unpriced_events": 0,
+   "usd": "6.00"
+  }
+ ],
+ "ceilings": [
+  {
+   "account": "aaaaaaaa",
+   "band_high_usd": "102.94",
+   "band_low_usd": "97.22",
+   "ceiling_nano": 100000000000,
+   "ceiling_usd": "100.00",
+   "change_note": "first window",
+   "change_pct": null,
+   "change_within_band": null,
+   "family": "claude",
+   "firm": true,
+   "percent": 35,
+   "reading_at": "2026-10-04T18:00:00.000Z",
+   "reading_source": "statusline",
+   "resets_at": "2026-10-04T19:00:00.000Z",
+   "shown": true,
+   "spend_nano": 35000000000,
+   "spend_usd": "35.00",
+   "start": "2026-09-27T19:00:00.000Z",
+   "unattributed_usd": "0.00",
+   "unpriced_events": 0,
+   "window": "seven_day"
+  },
+  {
+   "account": "aaaaaaaa",
+   "band_high_usd": "100.00",
+   "band_low_usd": "94.59",
+   "ceiling_nano": 97222222222,
+   "ceiling_usd": "97.22",
+   "change_note": null,
+   "change_pct": "-2.8",
+   "change_within_band": true,
+   "family": "claude",
+   "firm": true,
+   "percent": 36,
+   "reading_at": "2026-10-11T18:00:00.000Z",
+   "reading_source": "statusline",
+   "resets_at": "2026-10-11T19:00:00.000Z",
+   "shown": true,
+   "spend_nano": 35000000000,
+   "spend_usd": "35.00",
+   "start": "2026-10-04T19:00:00.000Z",
+   "unattributed_usd": "0.00",
+   "unpriced_events": 0,
+   "window": "seven_day"
+  },
+  {
+   "account": "aaaaaaaa",
+   "band_high_usd": "94.59",
+   "band_low_usd": "89.74",
+   "ceiling_nano": 92105263158,
+   "ceiling_usd": "92.11",
+   "change_note": null,
+   "change_pct": "-5.3",
+   "change_within_band": true,
+   "family": "claude",
+   "firm": true,
+   "percent": 38,
+   "reading_at": "2026-10-18T18:00:00.000Z",
+   "reading_source": "statusline",
+   "resets_at": "2026-10-18T19:00:00.000Z",
+   "shown": true,
+   "spend_nano": 35000000000,
+   "spend_usd": "35.00",
+   "start": "2026-10-11T19:00:00.000Z",
+   "unattributed_usd": "0.00",
+   "unpriced_events": 0,
+   "window": "seven_day"
+  },
+  {
+   "account": "aaaaaaaa",
+   "band_high_usd": "89.74",
+   "band_low_usd": "85.37",
+   "ceiling_nano": 87500000000,
+   "ceiling_usd": "87.50",
+   "change_note": null,
+   "change_pct": "-5.0",
+   "change_within_band": true,
+   "family": "claude",
+   "firm": true,
+   "percent": 40,
+   "reading_at": "2026-10-25T18:00:00.000Z",
+   "reading_source": "statusline",
+   "resets_at": "2026-10-25T19:00:00.000Z",
+   "shown": true,
+   "spend_nano": 35000000000,
+   "spend_usd": "35.00",
+   "start": "2026-10-18T19:00:00.000Z",
+   "unattributed_usd": "0.00",
+   "unpriced_events": 0,
+   "window": "seven_day"
+  },
+  {
+   "account": "aaaaaaaa",
+   "band_high_usd": "85.37",
+   "band_low_usd": "81.40",
+   "ceiling_nano": 83333333333,
+   "ceiling_usd": "83.33",
+   "change_note": null,
+   "change_pct": "-4.8",
+   "change_within_band": true,
+   "family": "claude",
+   "firm": true,
+   "percent": 42,
+   "reading_at": "2026-11-01T18:00:00.000Z",
+   "reading_source": "statusline",
+   "resets_at": "2026-11-01T19:00:00.000Z",
+   "shown": true,
+   "spend_nano": 35000000000,
+   "spend_usd": "35.00",
+   "start": "2026-10-25T19:00:00.000Z",
+   "unattributed_usd": "0.00",
+   "unpriced_events": 0,
+   "window": "seven_day"
+  },
+  {
+   "account": "aaaaaaaa",
+   "band_high_usd": "77.78",
+   "band_low_usd": "75.00",
+   "ceiling_nano": 76363636364,
+   "ceiling_usd": "76.36",
+   "change_note": null,
+   "change_pct": "-8.4",
+   "change_within_band": false,
+   "family": "claude",
+   "firm": true,
+   "percent": 55,
+   "reading_at": "2026-11-08T18:00:00.000Z",
+   "reading_source": "statusline",
+   "resets_at": "2026-11-08T19:00:00.000Z",
+   "shown": true,
+   "spend_nano": 42000000000,
+   "spend_usd": "42.00",
+   "start": "2026-11-01T19:00:00.000Z",
+   "unattributed_usd": "0.00",
+   "unpriced_events": 0,
+   "window": "seven_day"
+  }
+ ],
+ "chart": {
+  "ceiling_points": [
+   {
+    "account": "aaaaaaaa",
+    "band_high_usd": "102.94",
+    "band_low_usd": "97.22",
+    "ceiling_usd": "100.00",
+    "firm": true,
+    "resets_at": "2026-10-04T19:00:00.000Z"
+   },
+   {
+    "account": "aaaaaaaa",
+    "band_high_usd": "100.00",
+    "band_low_usd": "94.59",
+    "ceiling_usd": "97.22",
+    "firm": true,
+    "resets_at": "2026-10-11T19:00:00.000Z"
+   },
+   {
+    "account": "aaaaaaaa",
+    "band_high_usd": "94.59",
+    "band_low_usd": "89.74",
+    "ceiling_usd": "92.11",
+    "firm": true,
+    "resets_at": "2026-10-18T19:00:00.000Z"
+   },
+   {
+    "account": "aaaaaaaa",
+    "band_high_usd": "89.74",
+    "band_low_usd": "85.37",
+    "ceiling_usd": "87.50",
+    "firm": true,
+    "resets_at": "2026-10-25T19:00:00.000Z"
+   },
+   {
+    "account": "aaaaaaaa",
+    "band_high_usd": "85.37",
+    "band_low_usd": "81.40",
+    "ceiling_usd": "83.33",
+    "firm": true,
+    "resets_at": "2026-11-01T19:00:00.000Z"
+   },
+   {
+    "account": "aaaaaaaa",
+    "band_high_usd": "77.78",
+    "band_low_usd": "75.00",
+    "ceiling_usd": "76.36",
+    "firm": true,
+    "resets_at": "2026-11-08T19:00:00.000Z"
+   }
+  ],
+  "ceiling_sparkline": "\u2588\u2587\u2586\u2584\u2583\u2581",
+  "has_readings": true,
+  "headline": {
+   "account": "aaaaaaaa",
+   "ceiling_usd": "76.36",
+   "change_pct": "-23.6",
+   "direction": "down",
+   "last_7d_usd": "42.00",
+   "since": "2026-10-04T19:00:00.000Z",
+   "spend_change_pct": "20.0",
+   "spend_direction": "up"
+  },
+  "spend_points": [
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-10",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-11",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-12",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-13",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-14",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-15",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-16",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-17",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-18",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-19",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-20",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-21",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-22",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-23",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-24",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-25",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-26",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-27",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-28",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-29",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-30",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-10-31",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.00",
+    "day": "2026-11-01",
+    "usd": "5.00"
+   },
+   {
+    "avg7_usd": "5.14",
+    "day": "2026-11-02",
+    "usd": "6.00"
+   },
+   {
+    "avg7_usd": "5.29",
+    "day": "2026-11-03",
+    "usd": "6.00"
+   },
+   {
+    "avg7_usd": "5.43",
+    "day": "2026-11-04",
+    "usd": "6.00"
+   },
+   {
+    "avg7_usd": "5.57",
+    "day": "2026-11-05",
+    "usd": "6.00"
+   },
+   {
+    "avg7_usd": "5.71",
+    "day": "2026-11-06",
+    "usd": "6.00"
+   },
+   {
+    "avg7_usd": "5.86",
+    "day": "2026-11-07",
+    "usd": "6.00"
+   },
+   {
+    "avg7_usd": "6.00",
+    "day": "2026-11-08",
+    "usd": "6.00"
+   }
+  ],
+  "spend_sparkline": "\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2588\u2588\u2588\u2588\u2588\u2588\u2588"
+ },
+ "events": [
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-09-28T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t00:req_t00",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-09-29T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t01:req_t01",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-09-30T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t02:req_t02",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-01T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t03:req_t03",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-02T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t04:req_t04",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-03T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t05:req_t05",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-04T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t06:req_t06",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-05T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t07:req_t07",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-06T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t08:req_t08",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-07T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t09:req_t09",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-08T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t10:req_t10",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-09T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t11:req_t11",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-10T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t12:req_t12",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-11T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t13:req_t13",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-12T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t14:req_t14",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-13T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t15:req_t15",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-14T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t16:req_t16",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-15T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t17:req_t17",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-16T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t18:req_t18",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-17T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t19:req_t19",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-18T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t20:req_t20",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-19T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t21:req_t21",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-20T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t22:req_t22",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-21T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t23:req_t23",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-22T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t24:req_t24",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-23T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t25:req_t25",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-24T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t26:req_t26",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-25T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t27:req_t27",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-26T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t28:req_t28",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-27T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t29:req_t29",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-28T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t30:req_t30",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-29T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t31:req_t31",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-30T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t32:req_t32",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-31T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t33:req_t33",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-01T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 5000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t34:req_t34",
+   "model": "claude-opus-5-5",
+   "output": 250000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-02T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 6000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t35:req_t35",
+   "model": "claude-opus-5-5",
+   "output": 300000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-03T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 6000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t36:req_t36",
+   "model": "claude-opus-5-5",
+   "output": 300000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-04T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 6000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t37:req_t37",
+   "model": "claude-opus-5-5",
+   "output": 300000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-05T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 6000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t38:req_t38",
+   "model": "claude-opus-5-5",
+   "output": 300000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-06T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 6000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t39:req_t39",
+   "model": "claude-opus-5-5",
+   "output": 300000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-07T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 6000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t40:req_t40",
+   "model": "claude-opus-5-5",
+   "output": 300000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-08T12:00:00.000Z",
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 6000000000,
+   "geo": "global",
+   "input": 0,
+   "key": "cc:msg_t41:req_t41",
+   "model": "claude-opus-5-5",
+   "output": 300000,
+   "priced": true,
+   "project": "/work/app",
+   "reasoning": 0,
+   "session": "sess-t1",
+   "source": "claude_code",
+   "speed": "standard",
+   "web_search": 0
+  }
+ ],
+ "readings": [
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-04T18:00:00.000Z",
+   "family": "claude",
+   "percent": 35,
+   "resets_at": "2026-10-04T19:00:00.000Z",
+   "source": "statusline",
+   "window": "seven_day"
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-11T18:00:00.000Z",
+   "family": "claude",
+   "percent": 36,
+   "resets_at": "2026-10-11T19:00:00.000Z",
+   "source": "statusline",
+   "window": "seven_day"
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-18T18:00:00.000Z",
+   "family": "claude",
+   "percent": 38,
+   "resets_at": "2026-10-18T19:00:00.000Z",
+   "source": "statusline",
+   "window": "seven_day"
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-10-25T18:00:00.000Z",
+   "family": "claude",
+   "percent": 40,
+   "resets_at": "2026-10-25T19:00:00.000Z",
+   "source": "statusline",
+   "window": "seven_day"
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-01T18:00:00.000Z",
+   "family": "claude",
+   "percent": 42,
+   "resets_at": "2026-11-01T19:00:00.000Z",
+   "source": "statusline",
+   "window": "seven_day"
+  },
+  {
+   "account": "aaaaaaaa",
+   "at": "2026-11-08T18:00:00.000Z",
+   "family": "claude",
+   "percent": 55,
+   "resets_at": "2026-11-08T19:00:00.000Z",
+   "source": "statusline",
+   "window": "seven_day"
+  }
+ ],
+ "spec": "1.1",
+ "totals": [
+  {
+   "cache_read": 0,
+   "cache_write": 0,
+   "cache_write_1h": 0,
+   "cost_nano": 217000000000,
+   "events": 42,
+   "input": 0,
+   "model": "claude-opus-5-5",
+   "output": 10850000,
+   "priced": true,
+   "reasoning": 0,
+   "source": "claude_code",
+   "usd": "217.00",
+   "web_search": 0
+  }
+ ],
+ "trend": {
+  "ceilings": [
+   {
+    "account": "aaaaaaaa",
+    "change_pct": "-23.6",
+    "direction": "down",
+    "family": "claude",
+    "first_ceiling_usd": "100.00",
+    "first_resets_at": "2026-10-04T19:00:00.000Z",
+    "last_ceiling_usd": "76.36",
+    "last_resets_at": "2026-11-08T19:00:00.000Z",
+    "sparkline": "\u2588\u2587\u2586\u2584\u2583\u2581",
+    "weeks": 6,
+    "window": "seven_day"
+   }
+  ],
+  "now": "2026-11-08T20:00:00.000Z",
+  "spend": {
+   "change_pct": "20.0",
+   "days": [
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-10",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-11",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-12",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-13",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-14",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-15",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-16",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-17",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-18",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-19",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-20",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-21",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-22",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-23",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-24",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-25",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-26",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-27",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-28",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-29",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-30",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-10-31",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.00",
+     "day": "2026-11-01",
+     "usd": "5.00"
+    },
+    {
+     "avg7_usd": "5.14",
+     "day": "2026-11-02",
+     "usd": "6.00"
+    },
+    {
+     "avg7_usd": "5.29",
+     "day": "2026-11-03",
+     "usd": "6.00"
+    },
+    {
+     "avg7_usd": "5.43",
+     "day": "2026-11-04",
+     "usd": "6.00"
+    },
+    {
+     "avg7_usd": "5.57",
+     "day": "2026-11-05",
+     "usd": "6.00"
+    },
+    {
+     "avg7_usd": "5.71",
+     "day": "2026-11-06",
+     "usd": "6.00"
+    },
+    {
+     "avg7_usd": "5.86",
+     "day": "2026-11-07",
+     "usd": "6.00"
+    },
+    {
+     "avg7_usd": "6.00",
+     "day": "2026-11-08",
+     "usd": "6.00"
+    }
+   ],
+   "direction": "up",
+   "last_7d_usd": "42.00",
+   "prior_7d_usd": "35.00",
+   "sparkline": "\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2587\u2588\u2588\u2588\u2588\u2588\u2588\u2588"
+  }
+ }
+}

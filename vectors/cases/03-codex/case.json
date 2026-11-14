@@ -2,5 +2,6 @@
   "tz": "UTC",
   "prices": "../../prices.json",
   "codex_dir": "codex",
+  "now": "2026-11-10T12:00:00Z",
   "description": "Codex: count by running total, price cached and cache-write input, long prompts, model changes; Codex's own plan readings make its ceilings."
 }

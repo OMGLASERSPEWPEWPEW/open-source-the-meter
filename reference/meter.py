@@ -7,6 +7,7 @@
 import os
 import sys
 
+sys.dont_write_bytecode = True  # never leave __pycache__ in the audited clone (the status line runs this file)
 HERE = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, HERE)  # -I leaves the script's folder off the path; meterlib lives next to this file
 

@@ -2,5 +2,6 @@
   "tz": "-06:00",
   "prices": "../../prices.json",
   "claude_dir": "claude",
+  "now": "2026-11-11T12:00:00Z",
   "description": "Claude Code: count each response once, price every token kind, leave unknown models unpriced."
 }

@@ -5,8 +5,8 @@ A small implementation of [SPEC.md](../SPEC.md) in Python 3.9 or later, standard
 it as is, or hold your own version to the same answers.
 
 ```sh
-python3 -I reference/meter.py --help
-python3 -I -m unittest discover -s reference/tests
+python3 -B -I reference/meter.py --help
+python3 -B -I -m unittest discover -s reference/tests
 ```
 
 | File | What it does |
@@ -20,6 +20,7 @@ python3 -I -m unittest discover -s reference/tests
 | `meterlib/app.py` | The operations the CLI, MCP server and dashboard share (§9), including the git call |
 | `meterlib/mcp.py` | The MCP server over stdin and stdout (§11.1) |
 | `meterlib/cli.py` | The command line (§11.2) |
+| `meterlib/charts.py` | The two line charts as inline SVG, and the trend sentences (§9.1, §11.3) |
 | `meterlib/dashboard.py` | The optional page on 127.0.0.1 (§11.3) |
 | `meterlib/statusline.py` | The statusline wrapper and its install and undo (§6.2, §11.4) |
 | `meterlib/mcpconfig.py` | Adding the MCP server to Cursor or Claude Desktop, and taking it out (§11.4) |

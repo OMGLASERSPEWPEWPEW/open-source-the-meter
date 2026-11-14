@@ -105,6 +105,7 @@
    "reading_at": "2026-11-10T10:00:00.000Z",
    "reading_source": "statusline",
    "resets_at": "2026-11-10T15:00:00.000Z",
+   "shown": true,
    "spend_nano": 2000000000,
    "spend_usd": "2.00",
    "start": "2026-11-10T10:00:00.000Z",
@@ -127,6 +128,7 @@
    "reading_at": "2026-11-01T09:00:00.000Z",
    "reading_source": "limit_hit",
    "resets_at": "2026-11-05T03:00:00.000Z",
+   "shown": true,
    "spend_nano": 0,
    "spend_usd": "0.00",
    "start": "2026-10-29T03:00:00.000Z",
@@ -136,10 +138,10 @@
   },
   {
    "account": "",
-   "band_high_usd": "0.51",
-   "band_low_usd": "0.50",
-   "ceiling_nano": 500000000,
-   "ceiling_usd": "0.50",
+   "band_high_usd": null,
+   "band_low_usd": null,
+   "ceiling_nano": null,
+   "ceiling_usd": null,
    "change_note": "account unknown",
    "change_pct": null,
    "change_within_band": null,
@@ -149,6 +151,7 @@
    "reading_at": "2026-11-08T14:00:00.000Z",
    "reading_source": "limit_hit",
    "resets_at": "2026-11-12T03:00:00.000Z",
+   "shown": false,
    "spend_nano": 500000000,
    "spend_usd": "0.50",
    "start": "2026-11-05T03:00:00.000Z",
@@ -171,6 +174,7 @@
    "reading_at": "2026-11-04T12:00:00.000Z",
    "reading_source": "statusline",
    "resets_at": "2026-11-06T19:00:00.000Z",
+   "shown": true,
    "spend_nano": 8000000000,
    "spend_usd": "8.00",
    "start": "2026-10-30T19:00:00.000Z",
@@ -193,6 +197,7 @@
    "reading_at": "2026-11-11T11:00:00.000Z",
    "reading_source": "statusline",
    "resets_at": "2026-11-13T19:00:00.000Z",
+   "shown": true,
    "spend_nano": 10000000000,
    "spend_usd": "10.00",
    "start": "2026-11-06T19:00:00.000Z",
@@ -206,7 +211,7 @@
    "band_low_usd": "4.95",
    "ceiling_nano": 5000000000,
    "ceiling_usd": "5.00",
-   "change_note": "overlaps the last window (an early reset?)",
+   "change_note": "an early reset (the plan reset before the last window was out)",
    "change_pct": null,
    "change_within_band": null,
    "family": "claude",
@@ -215,6 +220,7 @@
    "reading_at": "2026-11-14T11:00:00.000Z",
    "reading_source": "limit_hit",
    "resets_at": "2026-11-17T19:00:00.000Z",
+   "shown": true,
    "spend_nano": 5000000000,
    "spend_usd": "5.00",
    "start": "2026-11-10T19:00:00.000Z",
@@ -224,11 +230,11 @@
   },
   {
    "account": "bbbbbbbb",
-   "band_high_usd": "40.00",
-   "band_low_usd": "28.57",
-   "ceiling_nano": 33333333333,
-   "ceiling_usd": "33.33",
-   "change_note": "first window",
+   "band_high_usd": null,
+   "band_low_usd": null,
+   "ceiling_nano": null,
+   "ceiling_usd": null,
+   "change_note": "not enough data: under 20% used",
    "change_pct": null,
    "change_within_band": null,
    "family": "claude",
@@ -237,6 +243,7 @@
    "reading_at": "2026-11-08T13:00:00.000Z",
    "reading_source": "statusline",
    "resets_at": "2026-11-12T02:00:00.000Z",
+   "shown": false,
    "spend_nano": 2000000000,
    "spend_usd": "2.00",
    "start": "2026-11-05T02:00:00.000Z",
@@ -245,6 +252,191 @@
    "window": "seven_day"
   }
  ],
+ "chart": {
+  "ceiling_points": [
+   {
+    "account": "aaaaaaaa",
+    "band_high_usd": "33.33",
+    "band_low_usd": "30.77",
+    "ceiling_usd": "32.00",
+    "firm": true,
+    "resets_at": "2026-11-06T19:00:00.000Z"
+   },
+   {
+    "account": "aaaaaaaa",
+    "band_high_usd": "27.78",
+    "band_low_usd": "26.32",
+    "ceiling_usd": "27.03",
+    "firm": true,
+    "resets_at": "2026-11-13T19:00:00.000Z"
+   }
+  ],
+  "ceiling_sparkline": "\u2588\u2581",
+  "has_readings": true,
+  "headline": {
+   "account": "aaaaaaaa",
+   "ceiling_usd": "27.03",
+   "change_pct": "-15.5",
+   "direction": "down",
+   "last_7d_usd": "7.00",
+   "since": "2026-11-06T19:00:00.000Z",
+   "spend_change_pct": "-44.0",
+   "spend_direction": "down"
+  },
+  "spend_points": [
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-18",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-19",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-20",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-21",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-22",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-23",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-24",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-25",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-26",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-27",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-28",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-29",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-30",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-31",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.29",
+    "day": "2026-11-01",
+    "usd": "2.00"
+   },
+   {
+    "avg7_usd": "0.57",
+    "day": "2026-11-02",
+    "usd": "2.00"
+   },
+   {
+    "avg7_usd": "0.86",
+    "day": "2026-11-03",
+    "usd": "2.00"
+   },
+   {
+    "avg7_usd": "1.14",
+    "day": "2026-11-04",
+    "usd": "2.00"
+   },
+   {
+    "avg7_usd": "1.14",
+    "day": "2026-11-05",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "1.21",
+    "day": "2026-11-06",
+    "usd": "0.50"
+   },
+   {
+    "avg7_usd": "1.50",
+    "day": "2026-11-07",
+    "usd": "2.00"
+   },
+   {
+    "avg7_usd": "1.79",
+    "day": "2026-11-08",
+    "usd": "4.00"
+   },
+   {
+    "avg7_usd": "1.79",
+    "day": "2026-11-09",
+    "usd": "2.00"
+   },
+   {
+    "avg7_usd": "1.79",
+    "day": "2026-11-10",
+    "usd": "2.00"
+   },
+   {
+    "avg7_usd": "1.79",
+    "day": "2026-11-11",
+    "usd": "2.00"
+   },
+   {
+    "avg7_usd": "1.79",
+    "day": "2026-11-12",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "1.71",
+    "day": "2026-11-13",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "1.86",
+    "day": "2026-11-14",
+    "usd": "3.00"
+   },
+   {
+    "avg7_usd": "1.29",
+    "day": "2026-11-15",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "1.00",
+    "day": "2026-11-16",
+    "usd": "0.00"
+   }
+  ],
+  "spend_sparkline": "\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2585\u2585\u2585\u2585\u2581\u2582\u2585\u2588\u2585\u2585\u2585\u2581\u2581\u2586\u2581\u2581"
+ },
  "events": [
   {
    "account": "aaaaaaaa",
@@ -588,7 +780,7 @@
    "window": "seven_day"
   }
  ],
- "spec": "1",
+ "spec": "1.1",
  "totals": [
   {
    "cache_read": 0,
@@ -620,5 +812,195 @@
    "usd": "2.50",
    "web_search": 0
   }
- ]
+ ],
+ "trend": {
+  "ceilings": [
+   {
+    "account": "aaaaaaaa",
+    "change_pct": null,
+    "direction": null,
+    "family": "claude",
+    "first_ceiling_usd": "3.85",
+    "first_resets_at": "2026-11-10T15:00:00.000Z",
+    "last_ceiling_usd": "3.85",
+    "last_resets_at": "2026-11-10T15:00:00.000Z",
+    "sparkline": "\u2584",
+    "weeks": 1,
+    "window": "five_hour"
+   },
+   {
+    "account": "aaaaaaaa",
+    "change_pct": "-15.5",
+    "direction": "down",
+    "family": "claude",
+    "first_ceiling_usd": "32.00",
+    "first_resets_at": "2026-11-06T19:00:00.000Z",
+    "last_ceiling_usd": "27.03",
+    "last_resets_at": "2026-11-13T19:00:00.000Z",
+    "sparkline": "\u2588\u2581",
+    "weeks": 2,
+    "window": "seven_day"
+   }
+  ],
+  "now": "2026-11-16T12:00:00.000Z",
+  "spend": {
+   "change_pct": "-44.0",
+   "days": [
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-18",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-19",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-20",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-21",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-22",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-23",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-24",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-25",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-26",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-27",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-28",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-29",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-30",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-31",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.29",
+     "day": "2026-11-01",
+     "usd": "2.00"
+    },
+    {
+     "avg7_usd": "0.57",
+     "day": "2026-11-02",
+     "usd": "2.00"
+    },
+    {
+     "avg7_usd": "0.86",
+     "day": "2026-11-03",
+     "usd": "2.00"
+    },
+    {
+     "avg7_usd": "1.14",
+     "day": "2026-11-04",
+     "usd": "2.00"
+    },
+    {
+     "avg7_usd": "1.14",
+     "day": "2026-11-05",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "1.21",
+     "day": "2026-11-06",
+     "usd": "0.50"
+    },
+    {
+     "avg7_usd": "1.50",
+     "day": "2026-11-07",
+     "usd": "2.00"
+    },
+    {
+     "avg7_usd": "1.79",
+     "day": "2026-11-08",
+     "usd": "4.00"
+    },
+    {
+     "avg7_usd": "1.79",
+     "day": "2026-11-09",
+     "usd": "2.00"
+    },
+    {
+     "avg7_usd": "1.79",
+     "day": "2026-11-10",
+     "usd": "2.00"
+    },
+    {
+     "avg7_usd": "1.79",
+     "day": "2026-11-11",
+     "usd": "2.00"
+    },
+    {
+     "avg7_usd": "1.79",
+     "day": "2026-11-12",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "1.71",
+     "day": "2026-11-13",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "1.86",
+     "day": "2026-11-14",
+     "usd": "3.00"
+    },
+    {
+     "avg7_usd": "1.29",
+     "day": "2026-11-15",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "1.00",
+     "day": "2026-11-16",
+     "usd": "0.00"
+    }
+   ],
+   "direction": "down",
+   "last_7d_usd": "7.00",
+   "prior_7d_usd": "12.50",
+   "sparkline": "\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2585\u2585\u2585\u2585\u2581\u2582\u2585\u2588\u2585\u2585\u2585\u2581\u2581\u2586\u2581\u2581"
+  }
+ }
 }

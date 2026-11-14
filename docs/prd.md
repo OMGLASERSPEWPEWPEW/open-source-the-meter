@@ -408,7 +408,7 @@ which account and session, which window, the percent, the reset time, when it wa
   - Scope: the note can't be turned off. The meter can't know whether a person used the plan anywhere else, and
     never claims they didn't.
 
-### Interfaces (FR-31 – FR-36)
+### Interfaces (FR-31 – FR-36, and FR-42 – FR-45)
 
 - **FR-31 MCP server over stdio.**
   - Trigger: a client (Claude Code, Codex, Cursor, Claude Desktop) starts the meter's `mcp` command as a stdio
@@ -449,7 +449,8 @@ which account and session, which window, the percent, the reset time, when it wa
   - Trigger: the person runs `dashboard`. Nothing else starts it, at login or otherwise.
   - Behavior: serves one read-only page, and the summary as JSON, on 127.0.0.1 only, on the port SPEC.md §11.3 sets
     or the one the person gives. It runs in the foreground until the person stops it. Each page load syncs (FR-11).
-    The page shows recent spend by day and by model, and Claude's weekly ceilings with the lower-bound note.
+    The page leads with the picture (FR-43): a plain-words headline, then two line charts, then the tables for
+    detail.
   - Error state: a port in use is an error that names the port option. A request with a Host other than the loopback
     address or `localhost` is refused (DNS rebinding), and so are cross-site requests and anything but a read
     (SPEC.md §11.3).
@@ -479,6 +480,64 @@ which account and session, which window, the percent, the reset time, when it wa
   - Scope: git runs from an argument list, never a shell, with a clean environment, closed stdin, a timeout and an
     output cap, and with settings that stop a repo's own config from running a program or reaching the network
     (SPEC.md §10). Never fetches, never writes to the repo, never calls GitHub or any host. Never grades the code.
+
+- **FR-42 Trends: rising or falling, as numbers** (added 2026-11-14 after the user's "a person at a glance can see
+  if costs are rising or falling"; rules: SPEC.md §9.1).
+  - Trigger: any report, and `conformance` when it's given a reference time.
+  - Behavior: the meter works out two trends from the ledger.
+    - **What you use:** API-equivalent dollars in the last 7 days against the 7 days before, as a percent change
+      and a direction (up, down or about the same), plus a daily series with a 7-day average.
+    - **What the plan gives you:** for each product, window and account, the implied ceiling from the first to the
+      last of the recent trusted windows (firm, no unattributed spend), as a percent change. The direction is
+      "within rounding" whenever the two windows' bands overlap, so a change the plan's whole-number percent could
+      explain is never called a rise or a fall.
+  - Error state: too little data (no earlier week, or fewer than two trusted windows) gives no percent and says so,
+    rather than a figure from one point.
+  - Saved data: none; trends are worked out from the ledger on each report.
+  - Scope: the numbers and directions are in the conformance document and pinned by a vector case (FR-37), so every
+    implementation calls the same trend the same way.
+- **FR-46 Only meaningful numbers; plain words for the rest** (from the 2026-11-14 stranger test on real logs).
+  - Trigger: any ceiling row, any sync report.
+  - Behavior:
+    - A window that isn't firm, or whose spend with no known account is more than its own, shows "not enough
+      data" instead of a dollar figure, and stays off the chart (SPEC.md §8, `shown`).
+    - Overlapping windows say which they are: "an early reset", or "two reset schedules mixed (likely two
+      accounts, or two limits, in one)", from whether both reset times recur.
+    - `sync` and `status` count plan readings the same way, as distinct readings.
+    - `sync` says repeats plainly: "repeated log lines for one response, skipped so nothing counts twice".
+  - Scope: the trend (FR-42) never uses a window that isn't shown or that overlaps another.
+- **FR-43 The dashboard leads with the picture.**
+  - Trigger: the dashboard page loads (FR-34).
+  - Behavior, top to bottom:
+    1. A headline in plain words, for example "Your plan's week is worth about $76 of API use, down 24% since
+       Oct 4", and the spend sentence, for example "You used $42 in the last 7 days, up 20% from the week before".
+       The account it describes is the one in use now.
+    2. A line chart of what the plan gives you: the implied weekly ceiling, week by week, one line per account, the
+       band shaded around it, only the weeks with enough data (FR-46), and the lower-bound note under it.
+    3. A line chart of what you use: API-equivalent dollars per day for the last 30 days, with the 7-day average as
+       the stronger line.
+    4. The tables (spend by model, the ceilings with their notes), for detail.
+  - Error state: no readings yet gives the first chart's place to a sentence saying how to get them (the wrapper,
+    or record-quota); no events gives the spend chart's place to a sentence saying nothing has been read yet.
+  - Saved data: none.
+  - Scope: inline SVG, no scripts, nothing loaded from elsewhere (FR-34). Hover shows each point's values through
+    the browser's own tooltip; every value is also in the tables. Light and dark come from the person's system
+    setting. Colours, marks and labels follow the dataviz rules recorded in SPEC.md §11.3.
+- **FR-44 The same shape in text: CLI and MCP.**
+  - Trigger: `summary`, `ceiling` and the new `chart` command; `meter_summary` and `meter_ceiling`.
+  - Behavior: each leads with a one-line trend sentence and a Unicode sparkline (`▁▂▃▄▅▆▇█`): the last 30 days of
+    spend for `summary`, and the account's recent weeks for `ceiling`. The MCP results carry the same sentence and
+    sparkline, plus the trend numbers (FR-42), so an AI can say "rising" or "falling" without reading a table.
+    `chart` prints the sentences and sparklines alone; `chart --out <file>` writes the headline and both charts as
+    one standalone SVG image.
+  - Error state: as FR-42 (too little data is said in words).
+  - Saved data: `chart --out` writes only the file it's given.
+  - Scope: the sentence and sparkline come first; the details follow as before.
+- **FR-45 The README shows the chart.**
+  - Trigger: someone opens the repo.
+  - Behavior: the README opens with an image of the dashboard's headline and charts, made by `chart --out` from the
+    synthetic vector case for trends, never from real logs. Its "show me my numbers" step leads to the chart.
+  - Scope: the image is regenerated whenever the drawing changes; it carries a caption saying it's synthetic.
 
 ### Conformance (FR-37 – FR-40)
 
@@ -596,10 +655,18 @@ neither, and the ADRs say why.
 
 ## 6. UI
 
-No designed UI. Every surface (MCP text, CLI, dashboard) shows the same facts: the period and its API-equivalent
-spend, with any unpriced models named; each window's ceiling with its band, firm mark, and change or the note that
-says why there's none; unattributed spend; and the lower-bound note for Claude (FR-30). The dashboard is one plain
-page with no scripts (SPEC.md §11.3).
+The picture is the product (the user, 2026-11-14: "we want to see a visual line graph or costs over time based on
+usage so a person at a glance can see if costs are rising or falling. A table shows none of that.").
+
+- **Every surface leads with the trend.** The dashboard, the CLI and the MCP text each start with a sentence that
+  says which way things are going and by how much, then a chart: an SVG line chart on the page, a sparkline in
+  text (FR-42 – FR-44).
+- **The facts are the same everywhere.** Every surface then shows:
+  - the period and its API-equivalent spend, with any unpriced models named;
+  - each window's ceiling with its band, its firm mark, and its change or the note that says why there's none;
+  - unattributed spend;
+  - the lower-bound note (FR-30).
+- **The dashboard** is one plain page with no scripts (SPEC.md §11.3).
 
 ## 7. Success measures
 

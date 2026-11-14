@@ -12,15 +12,15 @@ the absolute path to Python 3.9 or later (`command -v python3`; on macOS, `/usr/
 
 ```sh
 d="$(mktemp -d)"
-OPEN_METER_HOME="$d" "$PY" -I "$METER" summary --period 30d
-OPEN_METER_HOME="$d" "$PY" -I "$METER" status
+OPEN_METER_HOME="$d" "$PY" -B -I "$METER" chart --out meter-chart.svg   # open meter-chart.svg: the picture
+OPEN_METER_HOME="$d" "$PY" -B -I "$METER" status
 rm -rf "$d"
 ```
 
 ## 1. The first sync
 
 ```sh
-"$PY" -I "$METER" sync
+"$PY" -B -I "$METER" sync
 ```
 
 This creates `~/.open-meter/` (only you can read it) and reads your history into the ledger once. With a lot of
@@ -36,7 +36,7 @@ Do this for the client you use. Each one runs `PY -I METER mcp`: no port and no 
 ### Claude Code
 
 ```sh
-claude mcp add --scope user open-meter -- "$PY" -I "$METER" mcp
+claude mcp add --scope user open-meter -- "$PY" -B -I "$METER" mcp
 ```
 
 **Check:** `claude mcp list` shows `open-meter`. In a new session, ask "use meter_status".
@@ -45,7 +45,7 @@ claude mcp add --scope user open-meter -- "$PY" -I "$METER" mcp
 ### Codex
 
 ```sh
-codex mcp add open-meter -- "$PY" -I "$METER" mcp
+codex mcp add open-meter -- "$PY" -B -I "$METER" mcp
 ```
 
 **Check:** `codex mcp list`.
@@ -56,8 +56,8 @@ codex mcp add open-meter -- "$PY" -I "$METER" mcp
 These have no add command, so the meter's installer edits their config. It works like the statusline install:
 
 ```sh
-"$PY" -I "$METER" mcp-install --client cursor              # shows the one entry and the file; changes nothing
-"$PY" -I "$METER" mcp-install --client cursor --apply      # backs up the file, then adds only that entry
+"$PY" -B -I "$METER" mcp-install --client cursor              # shows the one entry and the file; changes nothing
+"$PY" -B -I "$METER" mcp-install --client cursor --apply      # backs up the file, then adds only that entry
 ```
 
 Use `--client claude-desktop` for Claude Desktop. The files:
@@ -72,7 +72,7 @@ What the installer does:
 - It refuses a file that isn't valid JSON, or one that already has a different `open-meter` entry.
 - After `--apply`, restart the app.
 
-**Undo:** `"$PY" -I "$METER" mcp-uninstall --client cursor --apply`. It removes only that entry, after a backup.
+**Undo:** `"$PY" -B -I "$METER" mcp-uninstall --client cursor --apply`. It removes only that entry, after a backup.
 
 ## 3. The statusline wrapper (optional, Claude Code)
 
@@ -80,8 +80,8 @@ This records your plan's used percent each time it changes. It reads the numbers
 status line: no login token, no private service.
 
 ```sh
-"$PY" -I "$METER" statusline-install            # shows the statusLine entry before and after; changes nothing
-"$PY" -I "$METER" statusline-install --apply    # makes the change, after a backup
+"$PY" -B -I "$METER" statusline-install            # shows the statusLine entry before and after; changes nothing
+"$PY" -B -I "$METER" statusline-install --apply    # makes the change, after a backup
 ```
 
 What `--apply` does:
@@ -91,10 +91,10 @@ What `--apply` does:
    command, and runs exactly as before.
 3. It refuses a settings file that isn't valid JSON, and changes nothing.
 
-**Check:** your status line looks the same as before. After a reply or two, `"$PY" -I "$METER" status` lists
+**Check:** your status line looks the same as before. After a reply or two, `"$PY" -B -I "$METER" status` lists
 statusline readings.
 
-**Undo:** `"$PY" -I "$METER" statusline-uninstall --apply`. It puts the old entry back, after another backup.
+**Undo:** `"$PY" -B -I "$METER" statusline-uninstall --apply`. It puts the old entry back, after another backup.
 
 **Don't move or delete the clone** while the wrapper is installed: the status line runs `METER` from it. If it does
 move, your old status line still shows, because the command falls back to it, but readings stop. Uninstall first.
@@ -102,19 +102,29 @@ move, your old status line still shows, because the command falls back to it, bu
 **Without the wrapper,** record what your plan's usage screen shows, now and then:
 
 ```sh
-"$PY" -I "$METER" record-quota 37 --resets-at 2026-11-20T19:00:00-06:00
+"$PY" -B -I "$METER" record-quota 37 --resets-at 2026-11-20T19:00:00-06:00
 ```
 
-## 4. The dashboard (optional)
+## 4. The picture, any time
 
 ```sh
-"$PY" -I "$METER" dashboard            # http://127.0.0.1:8787/ until you press Ctrl-C
+"$PY" -B -I "$METER" chart            # ~/.open-meter/meter-chart.svg: the headline and both line charts
+"$PY" -B -I "$METER" chart --html     # ~/.open-meter/meter-chart.html: the same, with the detail tables
+```
+
+Both are one self-contained file with no scripts. Open them in any browser, or with Quick Look on a Mac. In an MCP
+client, ask for `meter_chart`.
+
+## 5. The dashboard (optional)
+
+```sh
+"$PY" -B -I "$METER" dashboard            # http://127.0.0.1:8787/ until you press Ctrl-C
 ```
 
 It answers only on your own machine (127.0.0.1) and only to its own address. It runs no scripts and loads nothing
 from the internet. Nothing starts it for you.
 
-## 5. Keeping history longer (optional)
+## 6. Keeping history longer (optional)
 
 Claude Code deletes transcripts older than its `cleanupPeriodDays` setting (30 days by default). The meter's ledger
 keeps everything it has already read, so a sync at least once a month loses nothing. To keep the transcripts
@@ -123,7 +133,7 @@ setting.
 
 ## Taking it all out
 
-1. `"$PY" -I "$METER" statusline-uninstall --apply`
+1. `"$PY" -B -I "$METER" statusline-uninstall --apply`
 2. Remove the MCP entries (step 2's undo, for each client: `claude mcp remove`, `codex mcp remove`, `mcp-uninstall`).
 3. `rm -rf ~/.open-meter`
 4. Delete the clone.

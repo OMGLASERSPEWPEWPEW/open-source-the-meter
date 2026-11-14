@@ -290,9 +290,9 @@ What the reference does:
 - `errors.log` holds only the time and the class name of a statusline capture error. Lines the sync can't read are
   counted (`bad_lines` in `status`), never written down. (Medium)
 - To delete everything (AGENTS.md's Undo; docs/install.md):
-  1. `python3 -I reference/meter.py statusline-uninstall --apply`
+  1. `python3 -B -I reference/meter.py statusline-uninstall --apply`
   2. `claude mcp remove open-meter --scope user`, `codex mcp remove open-meter`, or
-     `python3 -I reference/meter.py mcp-uninstall --client cursor --apply` (or `--client claude-desktop`).
+     `python3 -B -I reference/meter.py mcp-uninstall --client cursor --apply` (or `--client claude-desktop`).
   3. `rm -rf ~/.open-meter` (or the folder `OPEN_METER_HOME` names). This deletes the backups too, so do steps 1 and
      2 first. (Medium)
 
@@ -412,7 +412,7 @@ What the reference and its docs do:
 
 - Every documented launch uses an absolute interpreter path with `-I`: `mcp-install` writes `sys.executable` and
   `["-I", <real path of meter.py>, "mcp"]`, the status line command is built the same way (section 5), and
-  docs/install.md uses `"$PY" -I "$METER"` for `claude mcp add` and `codex mcp add`. Isolated mode ignores `PYTHON*`
+  docs/install.md uses `"$PY" -B -I "$METER"` for `claude mcp add` and `codex mcp add`. Isolated mode ignores `PYTHON*`
   variables and the user's site-packages, and leaves the script's folder off `sys.path`; `meter.py` then adds its own
   folder. (Medium)
 - `reference/` holds `meter.py`, `meterlib/`, `tests/` and a README. The meter's modules live inside the `meterlib`
@@ -501,8 +501,8 @@ Then read every file in `reference/` and `vectors/run.py`, whole, including the 
 `reference/meterlib/mcp.py`, which reach the model in every session. Run the tests and the vectors:
 
 ```sh
-python3 -I -m unittest discover -s reference/tests
-python3 -I vectors/run.py
+python3 -B -I -m unittest discover -s reference/tests
+python3 -B -I vectors/run.py
 ```
 
 While the MCP server runs, `lsof -nP -i -a -p <pid>` prints nothing. While the dashboard runs, it shows one LISTEN on

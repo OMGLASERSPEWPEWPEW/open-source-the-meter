@@ -25,6 +25,7 @@
    "reading_at": "2026-11-10T10:30:00.000Z",
    "reading_source": "statusline",
    "resets_at": "2026-11-13T19:00:00.000Z",
+   "shown": true,
    "spend_nano": 420000000,
    "spend_usd": "0.42",
    "start": "2026-11-06T19:00:00.000Z",
@@ -175,7 +176,7 @@
    "window": "seven_day"
   }
  ],
- "spec": "1",
+ "spec": "1.1",
  "totals": [
   {
    "cache_read": 0,

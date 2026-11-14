@@ -9,7 +9,7 @@ Each case is copied to a fresh temp folder with HOME, OPEN_METER_HOME, CLAUDE_CO
 inside it, so a run never touches your real logs or ledger. The implementation is called as
 
     <command> conformance --db <file> --tz=<tz> --prices <file> [--claude-dir <dir>] [--codex-dir <dir>]
-              [--quota-file <file>] [--git-log <file> --repo <path> --since <iso> --until <iso>]
+              [--quota-file <file>] [--git-log <file> --repo <path> --since <iso> --until <iso>] [--now <iso>]
 
 and must print one JSON document, compared to the case's expected.json (or expected-<n>.json per step) by value.
 Python 3.9+ standard library only. Runs the command you give it; it runs nothing else.
@@ -97,6 +97,8 @@ def run_case(name, command, update):
             for key, flag in (("claude_dir", "--claude-dir"), ("codex_dir", "--codex-dir"), ("quota_file", "--quota-file")):
                 if case.get(key):
                     args += [flag, os.path.join(live, case[key])]
+            if case.get("now"):
+                args += ["--now", case["now"]]
             if case.get("yield"):
                 y = case["yield"]
                 args += ["--git-log", os.path.join(work, y["git_log"]), "--repo", y["repo"], "--since", y["since"],
@@ -142,7 +144,7 @@ def main():
     a = p.parse_args()
     command = a.command[1:] if a.command[:1] == ["--"] else a.command
     if not command:
-        command = [sys.executable, "-I", os.path.join(REPO, "reference", "meter.py")]
+        command = [sys.executable, "-B", "-I", os.path.join(REPO, "reference", "meter.py")]
     elif len(command) == 1 and " " in command[0]:
         command = shlex.split(command[0])
     names = [a.case] if a.case else sorted(n for n in os.listdir(CASES) if os.path.isdir(os.path.join(CASES, n)))

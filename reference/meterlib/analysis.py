@@ -6,9 +6,9 @@ import re
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from .util import NANO_PER_USD, day_of, decimal_of, format_time_ms, half_up, usd
+from .util import NANO_PER_USD, day_of, decimal_of, format_time_ms, half_up, local_dt, usd
 
-SPEC_VERSION = "1"
+SPEC_VERSION = "1.1"
 
 FAMILY_SOURCE = {"claude": "claude_code", "codex": "codex"}
 WINDOW_SECONDS = {"five_hour": 5 * 3600, "seven_day": 7 * 86400}
@@ -132,9 +132,14 @@ def ceilings(events, readings, several=frozenset()) -> list[dict]:
                 unpriced += 1
             else:
                 spend += ev["cost_nano"]
-        ceiling = _ratio(spend, pct)
-        low = _ratio(spend, pct + 1)
-        high = _ratio(spend, pct - 1) if pct > 1 else None
+        # A dollar figure only when it means something: firm, and not mostly spend no account can be tied to.
+        firm = pct >= FIRM_PERCENT
+        shown = firm and unattributed <= spend
+        why = None if shown else ("not enough data: under 20% used" if not firm
+                                  else "not enough data: most spend in it has no known account")
+        ceiling = _ratio(spend, pct) if shown else None
+        low = _ratio(spend, pct + 1) if shown else None
+        high = (_ratio(spend, pct - 1) if pct > 1 else None) if shown else None
         rows.append({
             "family": family, "account": short_account(account), "window": window,
             "resets_at": format_time_ms(chosen["resets_at"] * 1000), "start": format_time_ms(start_ms),
@@ -142,25 +147,33 @@ def ceilings(events, readings, several=frozenset()) -> list[dict]:
             "percent": chosen["percent"],
             "spend_nano": spend, "spend_usd": usd(spend),
             "ceiling_nano": ceiling, "ceiling_usd": usd(ceiling),
-            "band_low_usd": usd(low), "band_high_usd": usd(high),
-            "firm": pct >= FIRM_PERCENT,
+            "band_low_usd": usd(low), "band_high_usd": usd(high) if shown else None,
+            "firm": firm, "shown": shown, "_why": why,
             "unpriced_events": unpriced,
             "unattributed_usd": usd(unattributed),
             "_sort": (short_account(account), account, chosen["resets_at"]), "_acct": account,
             "_low": low, "_high": high,
         })
     rows.sort(key=lambda r: (r["family"], r["window"], r["_sort"]))
-    previous = {}
+    phases = {}
+    for row in rows:
+        phases.setdefault((row["family"], row["window"], row["_acct"]), []).append(row["_sort"][2])
+    previous, position = {}, {}
     for row in rows:
         k = (row["family"], row["window"], row["_acct"])
         prev = previous.get(k)
+        index = position[k] = position.get(k, -1) + 1
         row["change_pct"], row["change_within_band"], row["change_note"] = None, None, None
         if not row["_acct"] and row["family"] in several:
             row["change_note"] = "account unknown"
+        elif not row["shown"]:
+            row["change_note"] = row["_why"]
         elif prev is None:
             row["change_note"] = "first window"
         elif row["start"] < prev["resets_at"]:
-            row["change_note"] = "overlaps the last window (an early reset?)"
+            row["change_note"] = _overlap_note(phases[k], index, window_seconds(row["window"]))
+        elif not prev["shown"]:
+            row["change_note"] = "not enough data in the last window"
         elif row["unattributed_usd"] != "0.00" or prev["unattributed_usd"] != "0.00":
             row["change_note"] = "spend with no known account"
         elif not prev["ceiling_nano"]:
@@ -174,9 +187,24 @@ def ceilings(events, readings, several=frozenset()) -> list[dict]:
             row["change_within_band"] = not (hi_now < prev["_low"] or row["_low"] > hi_prev)
         previous[k] = row
     for row in rows:
-        for k in ("_sort", "_acct", "_low", "_high"):
+        for k in ("_sort", "_acct", "_low", "_high", "_why"):
             del row[k]
     return rows
+
+
+def _overlap_note(resets: list, i: int, length: int) -> str:
+    """Why window i overlaps window i-1 of the same account, in plain words (SPEC.md §8). A plan's windows keep one
+    reset time within their length (their phase). The same phase is one window read twice; the old phase coming back
+    later (or the new one seen earlier) means two schedules are mixed; otherwise the plan reset early."""
+    def same(a, b):
+        d = abs(a - b) % length
+        return min(d, length - d) <= 600
+    prev, cur = resets[i - 1] % length, resets[i] % length
+    if same(prev, cur):
+        return "the same window read twice (its reset time moved a little)"
+    if any(same(r % length, prev) for r in resets[i + 1:]) or any(same(r % length, cur) for r in resets[:i - 1]):
+        return "two reset schedules mixed (likely two accounts, or two limits, in one)"
+    return "an early reset (the plan reset before the last window was out)"
 
 
 # --- Level 2: git yield (SPEC.md §10) ----------------------------------------------------------------------------
@@ -280,7 +308,7 @@ def git_log_command(git: str, repo: str, since_ms: int, until_ms: int) -> list:
     ]
 
 
-def conformance(events, readings, tz, yield_case=None, several=frozenset()) -> dict:
+def conformance(events, readings, tz, yield_case=None, several=frozenset(), now_ms=None) -> dict:
     """The document a conforming implementation prints for `conformance` (SPEC.md §12)."""
     doc = {
         "spec": SPEC_VERSION,
@@ -290,7 +318,147 @@ def conformance(events, readings, tz, yield_case=None, several=frozenset()) -> d
         "readings": [reading_out(r) for r in readings],
         "ceilings": ceilings(events, readings, several),
     }
+    if now_ms is not None:
+        doc["trend"] = trend_doc(events, doc["ceilings"], now_ms, tz)
+        doc["chart"] = chart_data(events, doc["ceilings"], now_ms, tz)
     if yield_case is not None:
         doc["yield"] = git_yield(yield_case["commits"], events, yield_case["repo"], yield_case["since_ms"],
                                  yield_case["until_ms"])
     return doc
+
+
+# --- Trends and chart data (SPEC.md §9.1, §12) -----------------------------------------------------------------------
+
+SPARKS = "▁▂▃▄▅▆▇█"  # ▁▂▃▄▅▆▇█
+DAY_MS = 86_400_000
+TREND_WEEKS = 8
+CHART_ACCOUNTS = 3
+
+
+def sparkline(values, from_zero: bool) -> str:
+    """One character per value: from zero (spend) or from the minimum (ceilings), rounded half away from zero."""
+    if not values:
+        return ""
+    if from_zero:
+        top = max(values)
+        if top <= 0:
+            return SPARKS[0] * len(values)
+        return "".join(SPARKS[int(half_up(Decimal(v) * 7 / top))] for v in values)
+    low, top = min(values), max(values)
+    if top == low:
+        return SPARKS[3] * len(values)
+    return "".join(SPARKS[int(half_up(Decimal(v - low) * 7 / (top - low)))] for v in values)
+
+
+def _pct(new: int, old: int):
+    return str(half_up(Decimal(new - old) * 100 / old, 1)) if old else None
+
+
+def spend_trend(events, now_ms: int, tz) -> dict:
+    """The last 7 days against the 7 before, and 30 days with a 7-day average (SPEC.md §9.1)."""
+    from datetime import timedelta
+    last = prior = 0
+    per_day = {}
+    for ev in events:
+        if ev["cost_nano"] is None or ev["at"] > now_ms:
+            continue
+        if now_ms - 7 * DAY_MS < ev["at"]:
+            last += ev["cost_nano"]
+        elif now_ms - 14 * DAY_MS < ev["at"]:
+            prior += ev["cost_nano"]
+        day = day_of(ev["at"], tz)
+        per_day[day] = per_day.get(day, 0) + ev["cost_nano"]
+    today = local_dt(now_ms, tz).date()
+    span = [(today - timedelta(days=i)).isoformat() for i in range(35, -1, -1)]   # 30 days and the 6 before
+    days = []
+    for i in range(6, len(span)):
+        window = [per_day.get(span[j], 0) for j in range(i - 6, i + 1)]
+        days.append({"day": span[i], "usd": usd(per_day.get(span[i], 0)),
+                     "avg7_usd": usd(int(half_up(Decimal(sum(window)) / 7))), "_nano": per_day.get(span[i], 0)})
+    change = _pct(last, prior)
+    if change is None:
+        direction = None
+    elif Decimal(change) >= 5:
+        direction = "up"
+    elif Decimal(change) <= -5:
+        direction = "down"
+    else:
+        direction = "flat"
+    line = sparkline([d.pop("_nano") for d in days], from_zero=True)
+    return {"last_7d_usd": usd(last), "prior_7d_usd": usd(prior), "change_pct": change, "direction": direction,
+            "sparkline": line, "days": days}
+
+
+def trusted(row) -> bool:
+    """A window the trend and the chart can stand on: shown, firm, all spend attributed, its account known, and not
+    overlapping another window (SPEC.md §9.1)."""
+    note = row.get("change_note") or ""
+    return (row["shown"] and row["firm"] and row["unattributed_usd"] == "0.00" and note != "account unknown"
+            and not note.startswith(("an early reset", "two reset schedules", "the same window")))
+
+
+def ceiling_trends(rows) -> list:
+    """Per (family, window, account): the first and last of the last 8 trusted windows (SPEC.md §9.1)."""
+    groups = {}
+    for row in rows:
+        groups.setdefault((row["family"], row["window"], row["account"]), []).append(row)
+    out = []
+    for (family, window, account), rs in groups.items():
+        good = sorted([r for r in rs if trusted(r)], key=lambda r: r["resets_at"])[-TREND_WEEKS:]
+        if not good:
+            continue
+        first, last = good[0], good[-1]
+        change = _pct(last["ceiling_nano"], first["ceiling_nano"]) if len(good) > 1 and first["ceiling_nano"] else None
+        direction = None
+        if change is not None:
+            low_l, high_l = Decimal(last["band_low_usd"]), last["band_high_usd"]
+            low_f, high_f = Decimal(first["band_low_usd"]), first["band_high_usd"]
+            overlap = (high_f is None or low_l <= Decimal(high_f)) and (high_l is None or Decimal(high_l) >= low_f)
+            direction = "within rounding" if overlap else ("up" if last["ceiling_nano"] > first["ceiling_nano"] else "down")
+        out.append({"family": family, "window": window, "account": account, "weeks": len(good),
+                    "first_resets_at": first["resets_at"], "last_resets_at": last["resets_at"],
+                    "first_ceiling_usd": first["ceiling_usd"], "last_ceiling_usd": last["ceiling_usd"],
+                    "change_pct": change, "direction": direction,
+                    "sparkline": sparkline([r["ceiling_nano"] for r in good], from_zero=False)})
+    out.sort(key=lambda t: (t["family"], t["window"], t["account"]))
+    return out
+
+
+def current_account(events, source: str = "claude_code") -> str:
+    """The account of the most recent event of a source: the one in use now."""
+    latest = None
+    for ev in events:
+        if ev["source"] == source and (latest is None or (ev["at"], ev["key"]) > (latest["at"], latest["key"])):
+            latest = ev
+    return short_account(latest["account"]) if latest else ""
+
+
+def chart_data(events, rows, now_ms: int, tz) -> dict:
+    """What the chart plots and its headline numbers (SPEC.md §11.3, §12): Claude's weekly ceilings for up to 3
+    accounts over their last 8 windows, the 30 days of spend, and the headline."""
+    weekly = [r for r in rows if r["family"] == "claude" and r["window"] == "seven_day"]
+    by_account = {}
+    for r in sorted(weekly, key=lambda r: r["resets_at"]):
+        if trusted(r):   # the chart plots what the headline stands on, nothing it refuses
+            by_account.setdefault(r["account"], []).append(r)
+    accounts = sorted(by_account, key=lambda a: by_account[a][-1]["resets_at"], reverse=True)[:CHART_ACCOUNTS]
+    points = []
+    for account in sorted(accounts):
+        for r in by_account[account][-TREND_WEEKS:]:
+            points.append({"account": account, "resets_at": r["resets_at"], "ceiling_usd": r["ceiling_usd"],
+                           "band_low_usd": r["band_low_usd"], "band_high_usd": r["band_high_usd"], "firm": r["firm"]})
+    spend = spend_trend(events, now_ms, tz)
+    who = current_account(events)
+    trend = next((t for t in ceiling_trends(weekly) if t["account"] == who), None)
+    headline = {"account": who, "ceiling_usd": trend["last_ceiling_usd"] if trend else None,
+                "change_pct": trend["change_pct"] if trend else None, "direction": trend["direction"] if trend else None,
+                "since": trend["first_resets_at"] if trend else None,
+                "last_7d_usd": spend["last_7d_usd"], "spend_change_pct": spend["change_pct"],
+                "spend_direction": spend["direction"]}
+    return {"headline": headline, "ceiling_points": points, "has_readings": bool(weekly),
+            "spend_points": [dict(d) for d in spend["days"]], "spend_sparkline": spend["sparkline"],
+            "ceiling_sparkline": trend["sparkline"] if trend else ""}
+
+
+def trend_doc(events, rows, now_ms: int, tz) -> dict:
+    return {"now": format_time_ms(now_ms), "spend": spend_trend(events, now_ms, tz), "ceilings": ceiling_trends(rows)}

@@ -1,5 +1,10 @@
 # Open-source the meter
 
+![The meter's chart: a weekly ceiling sliding from $100 to $76 over six weeks while daily use rises from $5 to $6](docs/meter-chart.svg)
+
+*The picture the meter draws from your own logs. This one is made from synthetic test data
+([vectors/cases/07-trends](vectors/cases/07-trends)), not anyone's real use.*
+
 When you pay for an AI plan by the month, you're shown a percent and a reset time. You're never told how much you
 bought. Meanwhile your AI coding tools keep exact logs on your own computer: every response, every token, every
 cache hit.
@@ -51,7 +56,7 @@ You'll talk to an AI in a terminal (a text window for typing commands). It takes
 
    > Audit it the way AGENTS.md says, and tell me what you found.
 
-   > Show me my numbers without installing anything.
+   > Show me my numbers as a chart, without installing anything.
 
    > Set it up. Show me each change before you make it.
 
@@ -60,25 +65,40 @@ Your AI asks before every change, and every change has an undo. You can stop aft
 ## Start here if you know your way around
 
 ```sh
-python3 -I -m unittest discover -s reference/tests     # the reference's tests (temp folders only)
-python3 -I vectors/run.py                              # the golden vectors against the reference
-d="$(mktemp -d)"; OPEN_METER_HOME="$d" python3 -I reference/meter.py summary --period 30d; rm -rf "$d"   # a look
+python3 -B -I -m unittest discover -s reference/tests     # the reference's tests (temp folders only)
+python3 -B -I vectors/run.py                              # the golden vectors against the reference
+d="$(mktemp -d)"; OPEN_METER_HOME="$d" python3 -B -I reference/meter.py chart --out meter-chart.svg; rm -rf "$d"   # a look: open meter-chart.svg
 
-python3 -I reference/meter.py sync                     # first sync into ~/.open-meter (large histories: a minute)
+python3 -B -I reference/meter.py sync                     # first sync into ~/.open-meter (large histories: a minute)
 claude mcp add --scope user open-meter -- "$(command -v python3)" -I "$PWD/reference/meter.py" mcp
-python3 -I reference/meter.py statusline-install       # shows the change; add --apply to make it
-python3 -I reference/meter.py ceiling
+python3 -B -I reference/meter.py statusline-install       # shows the change; add --apply to make it
+python3 -B -I reference/meter.py ceiling
+python3 -B -I reference/meter.py chart                    # writes ~/.open-meter/meter-chart.svg (--html adds the tables)
 ```
 
 - **Requirements:** Python 3.9 or later, standard library only. No packages, no network, nothing running in the
   background.
-- **MCP tools:** `meter_summary`, `meter_ceiling`, `meter_record_quota`, `meter_status` and `meter_yield`.
-- **More:** the CLI has the same reports plus `dashboard` (one page on 127.0.0.1). Codex, Cursor and Claude
-  Desktop setup is in [docs/install.md](docs/install.md).
+- **MCP tools:** `meter_summary`, `meter_ceiling`, `meter_chart`, `meter_record_quota`, `meter_status` and `meter_yield`.
+- **More:** the CLI has the same reports plus `chart` (one SVG or HTML file of the picture) and `dashboard` (the
+  same page on 127.0.0.1). Codex, Cursor and Claude Desktop setup is in [docs/install.md](docs/install.md).
+- **Sync early.** The meter keeps every response it has read, even after Claude Code deletes old transcripts (by
+  default after 30 days). History it never read is gone, so run the first sync soon.
 - **Your own version:** build it in any language from [SPEC.md](SPEC.md), then prove it:
-  `python3 -I vectors/run.py -- <your command>`.
+  `python3 -B -I vectors/run.py -- <your command>`.
 
 ## What the numbers mean
+
+**Rising or falling, at a glance.** Every report leads with a sentence and a small line chart (a sparkline in the
+terminal):
+
+- **Your plan's week:** what it's worth now, and how that compares with your first firm week in the last eight.
+- **Your use:** your last 7 days of API-equivalent use against the 7 days before.
+
+The rules for calling a trend are strict:
+
+- **Use** is only "up" or "down" when it moved by 5% or more.
+- **The plan's week** is only "up" or "down" when the two weeks' bands don't overlap. Otherwise the meter says
+  "within the plan's rounding".
 
 **API-equivalent cost** is what the same tokens would cost through the provider's API at list prices. It counts
 every token kind at its own price: input, output, cache reads, and the short-lived and 1-hour cache writes.

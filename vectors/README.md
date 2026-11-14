@@ -15,6 +15,7 @@ None of it comes from a real person's logs.
 | `03-codex` | Codex's running totals and repeats, cached and cache-write input, long prompts, model changes, its own plan readings in both forms, a resumed copy, a context-fill event, an unknown model |
 | `04-sync-steps` | Three syncs on one ledger: a half-written line read once it's whole, appends, a new file, a file cut short and read again, the readings file edited by hand |
 | `05-yield` | Level 2 git yield from a fixed `git log`: lockfiles and generated files left out, a revert pair, a binary file, spend only from sessions inside the repo |
+| `07-trends` | Trends and the chart: the 7-day spend change and direction, the weekly ceiling's change from its first to its last trusted week, the daily series with its 7-day average, the sparklines, the plotted points and the headline numbers. Cases 01, 02 and 03 also pin their trend and chart parts (a missing earlier week, the trusted filter, Codex) |
 | `06-hostile` | Hostile input stays data: odd text kept as text, mistyped or absurd counts as 0, a bad account id ignored, a symlinked log never read, reset times past year 9999 or in milliseconds or not numbers refused, a `cwd` that isn't text, a line nested too deep to parse (counted bad, and the sync goes on), and a readings file with refused lines |
 
 The cases use `prices.json` in this folder, a frozen copy of the price list. Updating the repo's prices never
@@ -23,9 +24,9 @@ changes an expected answer.
 ## Running them
 
 ```sh
-python3 -I vectors/run.py                          # the reference
-python3 -I vectors/run.py -- node meter/index.js   # any implementation, any language
-python3 -I vectors/run.py --case 03-codex -- ./my-meter
+python3 -B -I vectors/run.py                          # the reference
+python3 -B -I vectors/run.py -- node meter/index.js   # any implementation, any language
+python3 -B -I vectors/run.py --case 03-codex -- ./my-meter
 ```
 
 The runner copies each case to a temp folder and points `HOME`, `OPEN_METER_HOME`, `CLAUDE_CONFIG_DIR` and

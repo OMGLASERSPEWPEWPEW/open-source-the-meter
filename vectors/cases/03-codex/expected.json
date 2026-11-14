@@ -25,6 +25,7 @@
    "reading_at": "2026-11-10T09:50:00.000Z",
    "reading_source": "codex",
    "resets_at": "2026-11-10T10:50:00.000Z",
+   "shown": true,
    "spend_nano": 1071100000,
    "spend_usd": "1.07",
    "start": "2026-11-10T05:50:00.000Z",
@@ -34,11 +35,11 @@
   },
   {
    "account": "acct-cod",
-   "band_high_usd": "13.39",
-   "band_low_usd": "10.71",
-   "ceiling_nano": 11901111111,
-   "ceiling_usd": "11.90",
-   "change_note": "overlaps the last window (an early reset?)",
+   "band_high_usd": null,
+   "band_low_usd": null,
+   "ceiling_nano": null,
+   "ceiling_usd": null,
+   "change_note": "not enough data: under 20% used",
    "change_pct": null,
    "change_within_band": null,
    "family": "codex",
@@ -47,6 +48,7 @@
    "reading_at": "2026-11-10T09:21:00.000Z",
    "reading_source": "codex",
    "resets_at": "2026-11-10T14:00:00.000Z",
+   "shown": false,
    "spend_nano": 1071100000,
    "spend_usd": "1.07",
    "start": "2026-11-10T09:00:00.000Z",
@@ -56,11 +58,11 @@
   },
   {
    "account": "acct-cod",
-   "band_high_usd": "9.74",
-   "band_low_usd": "8.24",
-   "ceiling_nano": 8925833333,
-   "ceiling_usd": "8.93",
-   "change_note": "first window",
+   "band_high_usd": null,
+   "band_low_usd": null,
+   "ceiling_nano": null,
+   "ceiling_usd": null,
+   "change_note": "not enough data: under 20% used",
    "change_pct": null,
    "change_within_band": null,
    "family": "codex",
@@ -69,6 +71,7 @@
    "reading_at": "2026-11-10T09:21:00.000Z",
    "reading_source": "codex",
    "resets_at": "2026-11-14T09:00:00.000Z",
+   "shown": false,
    "spend_nano": 1071100000,
    "spend_usd": "1.07",
    "start": "2026-11-07T09:00:00.000Z",
@@ -77,6 +80,174 @@
    "window": "seven_day"
   }
  ],
+ "chart": {
+  "ceiling_points": [],
+  "ceiling_sparkline": "",
+  "has_readings": false,
+  "headline": {
+   "account": "",
+   "ceiling_usd": null,
+   "change_pct": null,
+   "direction": null,
+   "last_7d_usd": "1.07",
+   "since": null,
+   "spend_change_pct": null,
+   "spend_direction": null
+  },
+  "spend_points": [
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-12",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-13",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-14",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-15",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-16",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-17",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-18",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-19",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-20",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-21",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-22",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-23",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-24",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-25",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-26",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-27",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-28",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-29",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-30",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-10-31",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-11-01",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-11-02",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-11-03",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-11-04",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-11-05",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-11-06",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-11-07",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-11-08",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.00",
+    "day": "2026-11-09",
+    "usd": "0.00"
+   },
+   {
+    "avg7_usd": "0.15",
+    "day": "2026-11-10",
+    "usd": "1.07"
+   }
+  ],
+  "spend_sparkline": "\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2588"
+ },
  "events": [
   {
    "account": "acct-cod",
@@ -251,7 +422,7 @@
    "window": "five_hour"
   }
  ],
- "spec": "1",
+ "spec": "1.1",
  "totals": [
   {
    "cache_read": 8000,
@@ -313,5 +484,182 @@
    "usd": null,
    "web_search": 0
   }
- ]
+ ],
+ "trend": {
+  "ceilings": [
+   {
+    "account": "acct-cod",
+    "change_pct": null,
+    "direction": null,
+    "family": "codex",
+    "first_ceiling_usd": "3.57",
+    "first_resets_at": "2026-11-10T10:50:00.000Z",
+    "last_ceiling_usd": "3.57",
+    "last_resets_at": "2026-11-10T10:50:00.000Z",
+    "sparkline": "\u2584",
+    "weeks": 1,
+    "window": "five_hour"
+   }
+  ],
+  "now": "2026-11-10T12:00:00.000Z",
+  "spend": {
+   "change_pct": null,
+   "days": [
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-12",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-13",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-14",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-15",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-16",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-17",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-18",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-19",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-20",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-21",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-22",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-23",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-24",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-25",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-26",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-27",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-28",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-29",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-30",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-10-31",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-11-01",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-11-02",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-11-03",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-11-04",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-11-05",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-11-06",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-11-07",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-11-08",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.00",
+     "day": "2026-11-09",
+     "usd": "0.00"
+    },
+    {
+     "avg7_usd": "0.15",
+     "day": "2026-11-10",
+     "usd": "1.07"
+    }
+   ],
+   "direction": null,
+   "last_7d_usd": "1.07",
+   "prior_7d_usd": "0.00",
+   "sparkline": "\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2581\u2588"
+  }
+ }
 }
