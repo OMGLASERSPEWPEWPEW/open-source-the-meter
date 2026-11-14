@@ -170,7 +170,7 @@ def ceilings(events, readings, several=frozenset()) -> list[dict]:
             row["change_note"] = row["_why"]
         elif prev is None:
             row["change_note"] = "first window"
-        elif row["start"] < prev["resets_at"]:
+        elif row["_sort"][2] - window_seconds(row["window"]) < prev["_sort"][2] - 600:   # overlaps by more than 10 min
             row["change_note"] = _overlap_note(phases[k], index, window_seconds(row["window"]))
         elif not prev["shown"]:
             row["change_note"] = "not enough data in the last window"
@@ -424,10 +424,12 @@ def ceiling_trends(rows) -> list:
     return out
 
 
-def current_account(events, source: str = "claude_code") -> str:
-    """The account of the most recent event of a source: the one in use now."""
+def current_account(events, source: str = "claude_code", now_ms=None) -> str:
+    """The account of the most recent event of a source at or before now: the one in use now."""
     latest = None
     for ev in events:
+        if now_ms is not None and ev["at"] > now_ms:
+            continue
         if ev["source"] == source and (latest is None or (ev["at"], ev["key"]) > (latest["at"], latest["key"])):
             latest = ev
     return short_account(latest["account"]) if latest else ""
@@ -448,9 +450,10 @@ def chart_data(events, rows, now_ms: int, tz) -> dict:
             points.append({"account": account, "resets_at": r["resets_at"], "ceiling_usd": r["ceiling_usd"],
                            "band_low_usd": r["band_low_usd"], "band_high_usd": r["band_high_usd"], "firm": r["firm"]})
     spend = spend_trend(events, now_ms, tz)
-    who = current_account(events)
+    who = current_account(events, now_ms=now_ms)
     trend = next((t for t in ceiling_trends(weekly) if t["account"] == who), None)
-    headline = {"account": who, "ceiling_usd": trend["last_ceiling_usd"] if trend else None,
+    headline = {"account": who, "others_plotted": bool(points) and not trend,
+                "ceiling_usd": trend["last_ceiling_usd"] if trend else None,
                 "change_pct": trend["change_pct"] if trend else None, "direction": trend["direction"] if trend else None,
                 "since": trend["first_resets_at"] if trend else None,
                 "last_7d_usd": spend["last_7d_usd"], "spend_change_pct": spend["change_pct"],

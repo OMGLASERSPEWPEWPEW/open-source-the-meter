@@ -504,7 +504,7 @@ rule that applies sets `change_note`. Each of the seven notes leaves `change_pct
 1. The row's account is `""` and the family's source has named more than one account: `"account unknown"`.
 2. The row isn't `shown`: its "not enough data" note (above).
 3. There's no previous row: `"first window"`.
-4. `start` is before the previous row's `resets_at`: the windows overlap. A plan's windows keep one reset time
+4. `start` is more than 600 seconds before the previous row's `resets_at`: the windows overlap. A plan's windows keep one reset time
    within the window's length (its phase: `resets_at mod length`; two phases are the same within 600 seconds,
    counted around the circle).
    - The same phase as the previous row: `"the same window read twice (its reset time moved a little)"`.
@@ -756,8 +756,9 @@ One page, run in the foreground until Ctrl-C. Nothing starts it at login.
   - **Lines and points:** 2px lines; points 8px across with a 2px surface ring; bands as a 10% wash of the series
     colour; hairline gridlines.
   - **Axes:** a y-axis from zero with clean ticks.
-  - **Labels:** text in ink colours, never the series colour; a legend for two or more series; the value labelled
-    at the end of each line.
+  - **Labels:** text in ink colours, never the series colour; a legend whenever two or more accounts are plotted or
+    the one plotted isn't the account in use now; the value labelled at the end of each line, with a short leader
+    in the series colour when two labels had to be pushed apart.
   - **Colours:** the categorical slots in fixed order, `#2a78d6`, `#eb6834`, `#1baf7a` in light mode, with their
     dark steps `#3987e5`, `#d95926`, `#199e70`. A fourth account or more folds into the table only.
   - **Hover:** each point's values are in an SVG `<title>`, the browser's own tooltip. The page has no script, and
@@ -836,7 +837,7 @@ prints one JSON document:
 | `readings` | the distinct readings (§6.6), sorted by `at`, family, account, window, percent, each `{family, account, window, percent, resets_at, at, source}` with the times written out |
 | `ceilings` | every §8 row (not only the last few) |
 | `yield` | §10, only when `--git-log` is given. The file holds the git command's output (§10) and stands in for running git |
-| `chart` | only when `--now <time>` is given: what the charts plot and their headline numbers, never pixels. `headline`: `{account, ceiling_usd, change_pct, direction, since, last_7d_usd, spend_change_pct, spend_direction}` (the ceiling trend of the account on the most recent Claude Code event, and the spend trend). `ceiling_points`: Claude's `seven_day` trusted rows (§9.1) for the 3 accounts with the latest such windows, the last 8 each, sorted by account then `resets_at`, each `{account, resets_at, ceiling_usd, band_low_usd, band_high_usd, firm}`. `spend_points`: the 30 days of §9.1. `spend_sparkline` and `ceiling_sparkline` (the headline account's) |
+| `chart` | only when `--now <time>` is given: what the charts plot and their headline numbers, never pixels. `headline`: `{account, ceiling_usd, change_pct, direction, since, last_7d_usd, spend_change_pct, spend_direction}` (the ceiling trend of the account on the most recent Claude Code event at or before `now`, and the spend trend). `ceiling_points`: Claude's `seven_day` trusted rows (§9.1) for the 3 accounts with the latest such windows, the last 8 each, sorted by account then `resets_at`, each `{account, resets_at, ceiling_usd, band_low_usd, band_high_usd, firm}`. `spend_points`: the 30 days of §9.1. `spend_sparkline` and `ceiling_sparkline` (the headline account's) |
 | `trend` | §9.1, only when `--now <time>` is given: `{now, spend: {last_7d_usd, prior_7d_usd, change_pct, direction, sparkline, days: [{day, usd, avg7_usd}]}, ceilings: [{family, window, account, weeks, first_resets_at, last_resets_at, first_ceiling_usd, last_ceiling_usd, change_pct, direction, sparkline}]}`, the ceilings sorted like §8's rows |
 
 **The vectors.** `vectors/cases/<name>/` holds `case.json`, the fixtures, and `expected.json` (or `expected-<n>.json`

@@ -279,6 +279,7 @@
    "change_pct": "-15.5",
    "direction": "down",
    "last_7d_usd": "7.00",
+   "others_plotted": false,
    "since": "2026-11-06T19:00:00.000Z",
    "spend_change_pct": "-44.0",
    "spend_direction": "down"

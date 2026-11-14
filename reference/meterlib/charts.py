@@ -67,11 +67,13 @@ def money_words(text) -> str:
 
 def date_words(iso: str, tz) -> str:
     dt = local_dt(parse_time_ms(iso), tz)
-    return "%s %d" % (dt.strftime("%b"), dt.day)
+    return "%s\u00a0%d" % (dt.strftime("%b"), dt.day)   # a no-break space: a wrap never splits a date
 
 
 def ceiling_sentence(h: dict, tz) -> str:
     if h.get("ceiling_usd") is None:
+        if h.get("others_plotted"):
+            return "No week with enough data yet for the account in use now (account %s); the chart shows your other accounts." % (h.get("account") or "unknown")
         return "No week with enough data yet: a week's worth shows once your plan reads 20% or more used, with its use tied to your account."
     x = money_words(h["ceiling_usd"])
     if h.get("change_pct") is None:
@@ -135,7 +137,7 @@ def _frame(x0, y0, w, h, top, step, label_x=True) -> list:
     return out
 
 
-def ceiling_chart(points: list, tz, width: int = 720, height: int = 240) -> str:
+def ceiling_chart(points: list, tz, width: int = 720, height: int = 240, headline_account=None) -> str:
     """The implied weekly ceiling, week by week, one line per account (trusted weeks only), the band shaded."""
     if not points:
         return ""
@@ -163,7 +165,7 @@ def ceiling_chart(points: list, tz, width: int = 720, height: int = 240) -> str:
         out.append('<text class="tick" x="%s" y="%s" text-anchor="middle">%s</text>'
                    % (_f(x(ms)), _f(top_pad + h + 18), date_words(datetime.fromtimestamp(ms / 1000, tz=timezone.utc).isoformat(), tz)))
     ends = []
-    if len(accounts) > 1:   # a legend for two or more series: a short line key and the account
+    if len(accounts) > 1 or (headline_account is not None and accounts != [headline_account]):   # say whose line it is
         lx = left
         for i, acct in enumerate(accounts):
             out.append('<line class="line s%d" x1="%s" y1="14" x2="%s" y2="14"/>' % (i + 1, _f(lx), _f(lx + 16)))
@@ -188,11 +190,14 @@ def ceiling_chart(points: list, tz, width: int = 720, height: int = 240) -> str:
             out.append('<g><title>%s</title><circle class="hit" cx="%s" cy="%s" r="10"/><circle %s cx="%s" cy="%s" r="4"/></g>'
                        % (html.escape(tip), _f(cx), _f(cy), fill, _f(cx), _f(cy)))
         last = ps[-1]
-        ends.append([y(last["ceiling_usd"]) + 4, x(parse_time_ms(last["resets_at"])) + 10, money_words(last["ceiling_usd"])])
+        ends.append([y(last["ceiling_usd"]) + 4, x(parse_time_ms(last["resets_at"])) + 10, money_words(last["ceiling_usd"]), s])
     ends.sort()
+    first_y = [e[0] for e in ends]
     for j in range(1, len(ends)):   # end labels at least 14px apart, so two close lines keep readable labels
         ends[j][0] = max(ends[j][0], ends[j - 1][0] + 14)
-    for ly, lx, text in ends:
+    for (ly, lx, text, s), y0 in zip(ends, first_y):
+        if ly != y0:   # a short leader in the series colour ties a nudged label to its line
+            out.append('<line class="line s%d" style="stroke-width:1" x1="%s" y1="%s" x2="%s" y2="%s"/>' % (s, _f(lx - 9), _f(y0 - 4), _f(lx - 2), _f(ly - 4)))
         out.append('<text class="label" x="%s" y="%s">%s</text>' % (_f(lx), _f(ly), html.escape(text)))
     out.append("</g>")
     return "\n".join(out)
@@ -251,7 +256,8 @@ def wrap(text: str, width: int) -> list:
 def standalone_svg(data: dict, tz, caption: str, width: int = 720) -> str:
     """One self-contained SVG: the headline, both charts and a caption. Opens in any browser or Quick Look."""
     head, sub = ceiling_sentence(data["headline"], tz), spend_sentence(data["headline"])
-    c1, c2 = ceiling_chart(data["ceiling_points"], tz, width), spend_chart(data["spend_points"], width)
+    c1 = ceiling_chart(data["ceiling_points"], tz, width, headline_account=data["headline"].get("account"))
+    c2 = spend_chart(data["spend_points"], width)
     y = 0
     lines = wrap(head, 76)
     body = ['<rect class="bg" width="100%" height="100%"/>']

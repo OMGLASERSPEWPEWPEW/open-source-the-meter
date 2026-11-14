@@ -501,8 +501,8 @@ which account and session, which window, the percent, the reset time, when it wa
   - Behavior:
     - A window that isn't firm, or whose spend with no known account is more than its own, shows "not enough
       data" instead of a dollar figure, and stays off the chart (SPEC.md §8, `shown`).
-    - Overlapping windows say which they are: "an early reset", or "two reset schedules mixed (likely two
-      accounts, or two limits, in one)", from whether both reset times recur.
+    - Overlapping windows say which they are: "an early reset", "two reset schedules mixed (likely two accounts,
+      or two limits, in one)", or "the same window read twice" when the reset time only moved a little.
     - `sync` and `status` count plan readings the same way, as distinct readings.
     - `sync` says repeats plainly: "repeated log lines for one response, skipped so nothing counts twice".
   - Scope: the trend (FR-42) never uses a window that isn't shown or that overlaps another.
@@ -528,8 +528,8 @@ which account and session, which window, the percent, the reset time, when it wa
   - Behavior: each leads with a one-line trend sentence and a Unicode sparkline (`▁▂▃▄▅▆▇█`): the last 30 days of
     spend for `summary`, and the account's recent weeks for `ceiling`. The MCP results carry the same sentence and
     sparkline, plus the trend numbers (FR-42), so an AI can say "rising" or "falling" without reading a table.
-    `chart` prints the sentences and sparklines alone; `chart --out <file>` writes the headline and both charts as
-    one standalone SVG image.
+    `chart` writes the headline and both charts to `~/.open-meter/meter-chart.svg` (or `--html`, or `--out <file>`)
+    and prints its path with the sentences and sparklines.
   - Error state: as FR-42 (too little data is said in words).
   - Saved data: `chart --out` writes only the file it's given.
   - Scope: the sentence and sparkline come first; the details follow as before.

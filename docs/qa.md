@@ -7,7 +7,7 @@ Date: 2026-11-14 · Scope: SPEC.md, `reference/`, `vectors/`, AGENTS.md, the doc
 Run on macOS's Python 3.9 (`/usr/bin/python3`) and on a newer one:
 
 - [x] `python3 -B -I vectors/run.py`: 7 of 7 cases pass. That's 9 runs, counting each step.
-- [x] `python3 -B -I -m unittest discover -s reference/tests`: 45 tests pass. They cover:
+- [x] `python3 -B -I -m unittest discover -s reference/tests`: 47 tests pass. They cover:
   - the MCP handshake and errors, its argument checks, and output limits;
   - the wrapper (a moved clone, a closed pipe), its install and undo, and strict JSON;
   - `mcp-install` for Cursor, round trip, never printing other entries;

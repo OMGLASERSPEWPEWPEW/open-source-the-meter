@@ -116,7 +116,7 @@ Read it with these limits in mind. The meter states them in its reports too.
     computer, Codex in the cloud) adds to the percent, while the logs here only hold this computer's use. The real
     ceiling is at least this high.
   - **The percent is a whole number.** The meter gives a band: the ceiling for any percent one point either side.
-  - **Early readings are rough.** Readings under 20% aren't "firm".
+  - **Early readings are rough.** A week under 20% used shows "not enough data", not a dollar figure.
 - **Each account is kept apart.** If you switch between Claude accounts, each account's weeks are kept separate.
   Older logs don't say which account they belong to; with more than one account, that spend is shown as
   unattributed rather than guessed.
@@ -143,7 +143,7 @@ Read it with these limits in mind. The meter states them in its reports too.
 - **It never touches credentials.** It never opens credential files or the Keychain, and it needs no keys.
 - **It sends nothing.** The meter itself has no network code. When your AI reads the meter's output, that output
   goes to your AI provider like the rest of your chat.
-- **It writes in one place.** Everything goes to `~/.open-meter/`. Each config change is shown first and has an
+- **It writes in one place.** Everything goes to `~/.open-meter/`, except a chart you ask to write elsewhere (`chart --out`). Each config change is shown first and has an
   undo: one MCP entry (added with Claude Code's or Codex's own command, or by the meter's installer for Cursor and
   Claude Desktop), and, if you want it, Claude Code's status line. Files the meter edits itself are backed up first.
 - **Nothing runs in the background.** No services, no login items, no scheduled jobs. It does its work when you ask

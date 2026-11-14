@@ -207,10 +207,10 @@ class Meter:
             raise MeterError("format must be svg or html")
         data = self.chart_data()
         path = os.path.abspath(os.path.expanduser(out)) if out else os.path.join(self.home, "meter-chart.%s" % fmt)
-        if os.path.isdir(path):
+        if (out and out.endswith(("/", os.sep))) or os.path.isdir(path):   # a folder: the file goes inside it
             path = os.path.join(path, "meter-chart.%s" % fmt)
-        if os.path.basename(path) in ("meter.db", "quota.jsonl") or path.endswith((".db", ".jsonl")):
-            raise MeterError("--out must be a new .svg or .html file, not the meter's own data")
+        if os.path.splitext(path)[1].lower() != "." + fmt:
+            raise MeterError("--out must end in .%s%s" % (fmt, "" if fmt == "html" else " (or .html with --html)"))
         caption = caption or "The meter, from this machine's local logs · API list prices checked %s · drawn %s" % (
             self.prices.checked, format_time_ms(self.now())[:16].replace("T", " ") + " UTC")
         if fmt == "svg":

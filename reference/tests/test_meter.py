@@ -528,7 +528,7 @@ class Picture(TempHome):
         self.assertEqual(os.stat(r["path"]).st_mode & 0o777, 0o600)
         svg = read_text(r["path"])
         self.assertTrue(svg.startswith("<svg") and "<script" not in svg and "http://" not in svg.replace("http://www.w3.org/2000/svg", ""))
-        self.assertIn("down 23.6% since Oct 4", svg)
+        self.assertIn("down 23.6% since Oct\u00a04", svg)
         self.assertIn("$76.36", svg)                      # the last point's tooltip carries the exact value
         self.assertEqual(r["spend_sparkline"], "\u2587" * 23 + "\u2588" * 7)
         page = read_text(m.chart("html")["path"])
@@ -619,6 +619,28 @@ class StrangerTest(TempHome):
         self.assertIn("2 repeated log lines for one response, skipped so nothing counts twice", text)
         self.assertIn("1 plan reading", text)
         self.assertEqual(sum(r["count"] for r in self.meter().status()["readings"]), 1)
+
+
+class RoundThree(TempHome):
+    def test_out_takes_a_folder_and_only_the_right_ending(self):
+        from meterlib.util import parse_time_ms
+        m = Picture._seeded(self) if False else None
+        case = os.path.join(REPO, "vectors", "cases", "07-trends")
+        shutil.copytree(os.path.join(case, "claude"), os.path.join(self.tmp, "claude", "projects"), dirs_exist_ok=True)
+        m = Meter(tz="UTC", now=parse_time_ms("2026-11-08T20:00:00Z"))
+        self.assertTrue(m.chart("svg", os.path.join(self.tmp, "newdir") + "/")["path"].endswith("newdir/meter-chart.svg"))
+        for bad in ("keep.txt", "meter.DB", "x.svg"):
+            with self.assertRaises(MeterError):
+                m.chart("html" if bad == "x.svg" else "svg", os.path.join(self.tmp, bad))
+
+    def test_headline_names_the_account_when_the_chart_shows_others(self):
+        from meterlib import charts
+        text = charts.ceiling_sentence({"ceiling_usd": None, "others_plotted": True, "account": "bbbbbbbb"}, None)
+        self.assertIn("account bbbbbbbb", text)
+        svg = charts.ceiling_chart([{"account": "aaaaaaaa", "resets_at": "2026-11-06T19:00:00.000Z", "ceiling_usd": "32.00",
+                                     "band_low_usd": "30.00", "band_high_usd": "34.00", "firm": True}], None,
+                                   headline_account="bbbbbbbb")
+        self.assertIn("account aaaaaaaa", svg, "a legend says whose line it is")
 
 
 class Vectors(unittest.TestCase):
