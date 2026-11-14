@@ -24,7 +24,8 @@ def page_from(meter: Meter, data: dict, caption: str) -> str:
     head = charts.ceiling_sentence(data["headline"], meter.tz,
                                    charts.headline_name(data["headline"].get("account"), data["ceiling_points"], meter.tz))
     sub = charts.spend_sentence(data["headline"])
-    c1 = charts.ceiling_chart(data["ceiling_points"], meter.tz, headline_account=data["headline"].get("account"))
+    c1 = charts.ceiling_chart(data["ceiling_points"], meter.tz, headline_account=data["headline"].get("account"),
+                              now_ms=meter.now())
     c2 = charts.spend_chart(data["spend_points"])
     models = meter.summary("7d", group_by="model")
     rows = "".join(

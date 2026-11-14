@@ -48,6 +48,7 @@ def style() -> str:
         ".mc .line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}"
         ".mc .daily{fill:none;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round;opacity:.45}"
         ".mc .ring{stroke:var(--mc-surface);stroke-width:2}"
+        ".mc .open{fill:var(--mc-surface);stroke-width:2}"
         ".mc .hit{fill:transparent}"
         + "".join(".mc .s%d{stroke:var(--mc-s%d)}.mc .f%d{fill:var(--mc-s%d)}.mc .w%d{fill:var(--mc-s%d);opacity:.1}"
                   % (i, i, i, i, i, i) for i in (1, 2, 3))
@@ -158,7 +159,7 @@ def account_names(points: list, tz) -> dict:
                 else "account %s" % (a or "unknown")) for a, d in days.items()}
 
 
-def ceiling_chart(points: list, tz, width: int = 720, height: int = 240, headline_account=None) -> str:
+def ceiling_chart(points: list, tz, width: int = 720, height: int = 240, headline_account=None, now_ms=None) -> str:
     """The implied weekly ceiling, week by week, one line per account (trusted weeks only), the band shaded."""
     if not points:
         return ""
@@ -206,14 +207,19 @@ def ceiling_chart(points: list, tz, width: int = 720, height: int = 240, headlin
                 "%s,%s" % (_f(x(parse_time_ms(p["resets_at"]))), _f(y(p["ceiling_usd"]))) for p in ps)))
         for p in ps:
             cx, cy = x(parse_time_ms(p["resets_at"])), y(p["ceiling_usd"])
-            tip = "Week ending %s%s: $%s (band $%s to %s)" % (
+            still_open = now_ms is not None and parse_time_ms(p["resets_at"]) > now_ms   # its reset date is ahead
+            tip = "%s %s%s: $%s (band $%s to %s)" % (
+                "This week so far, resetting" if still_open else "Week ending",
                 date_words(p["resets_at"], tz), (" · " + names[acct]) if len(accounts) > 1 else "",
                 p["ceiling_usd"], p["band_low_usd"], ("$" + p["band_high_usd"]) if p["band_high_usd"] else "no limit")
-            fill = 'class="f%d ring"' % s
+            fill = ('class="open s%d"' if still_open else 'class="f%d ring"') % s   # hollow: not a finished week
             out.append('<g><title>%s</title><circle class="hit" cx="%s" cy="%s" r="10"/><circle %s cx="%s" cy="%s" r="4"/></g>'
                        % (html.escape(tip), _f(cx), _f(cy), fill, _f(cx), _f(cy)))
         last = ps[-1]
-        ends.append([y(last["ceiling_usd"]) + 4, x(parse_time_ms(last["resets_at"])) + 10, money_words(last["ceiling_usd"]), s])
+        label = money_words(last["ceiling_usd"])
+        if now_ms is not None and parse_time_ms(last["resets_at"]) > now_ms:
+            label += " so far"
+        ends.append([y(last["ceiling_usd"]) + 4, x(parse_time_ms(last["resets_at"])) + 10, label, s])
     ends.sort()
     first_y = [e[0] for e in ends]
     for j in range(1, len(ends)):   # end labels at least 14px apart, so two close lines keep readable labels
@@ -276,11 +282,11 @@ def wrap(text: str, width: int) -> list:
     return lines + [line]
 
 
-def standalone_svg(data: dict, tz, caption: str, width: int = 720) -> str:
+def standalone_svg(data: dict, tz, caption: str, width: int = 720, now_ms=None) -> str:
     """One self-contained SVG: the headline, both charts and a caption. Opens in any browser or Quick Look."""
     name = headline_name(data["headline"].get("account"), data["ceiling_points"], tz)
     head, sub = ceiling_sentence(data["headline"], tz, name), spend_sentence(data["headline"])
-    c1 = ceiling_chart(data["ceiling_points"], tz, width, headline_account=data["headline"].get("account"))
+    c1 = ceiling_chart(data["ceiling_points"], tz, width, headline_account=data["headline"].get("account"), now_ms=now_ms)
     c2 = spend_chart(data["spend_points"], width)
     y = 0
     lines = wrap(head, 76)

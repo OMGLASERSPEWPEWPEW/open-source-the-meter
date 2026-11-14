@@ -796,7 +796,9 @@ One page, run in the foreground until Ctrl-C. Nothing starts it at login.
     the one plotted isn't the account in use now, naming each account in plain words by the weekday its latest
     plotted week ends on, in the report's zone ("the account that resets Monday"), or by its first 8 characters
     when two share that weekday; the value labelled at the end of each line, with a short leader in the series
-    colour when two labels had to be pushed apart.
+    colour when two labels had to be pushed apart. A week whose reset is still ahead of the time of drawing is
+    plotted at its reset date but drawn hollow, its end label reads "so far" and its tooltip "This week so far", so
+    nobody reads a future date as a finished week.
   - **Colours:** the categorical slots in fixed order, `#2a78d6`, `#eb6834`, `#1baf7a` in light mode, with their
     dark steps `#3987e5`, `#d95926`, `#199e70`. A fourth account or more folds into the table only.
   - **Hover:** each point's values are in an SVG `<title>`, the browser's own tooltip. The page has no script, and

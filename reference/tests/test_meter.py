@@ -653,6 +653,18 @@ class RoundThree(TempHome):
                         .startswith("On the account that resets Saturday, your plan's week is worth about $33"))
         self.assertIsNone(charts.headline_name("aaaaaaaa", pts[:1], timezone.utc), "one account: no name needed")
 
+    def test_a_week_still_open_is_drawn_as_so_far(self):
+        from meterlib import charts
+        from meterlib.util import parse_time_ms
+        pts = [{"account": "aaaaaaaa", "resets_at": r, "ceiling_usd": c, "band_low_usd": c, "band_high_usd": c, "firm": True}
+               for r, c in (("2026-11-07T11:00:00.000Z", "1904.24"), ("2026-11-14T11:00:00.000Z", "2537.37"),
+                            ("2026-11-21T11:00:00.000Z", "2539.00"))]
+        svg = charts.ceiling_chart(pts, timezone.utc, now_ms=parse_time_ms("2026-11-14T19:00:00Z"))
+        self.assertEqual(svg.count('class="open s1"'), 1, "only the week still running is hollow")
+        self.assertIn("$2,539 so far", svg)
+        self.assertIn("This week so far, resetting Nov\u00a021", svg)
+        self.assertNotIn("so far", charts.ceiling_chart(pts, timezone.utc), "no time given: nothing marked")
+
 
 class AccountSwitch(TempHome):
     """SPEC.md §3.8: one sign-in moves every running session; reset schedules tell the accounts apart."""

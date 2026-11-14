@@ -218,7 +218,7 @@ class Meter:
         caption = caption or "The meter, from this machine's local logs · API list prices checked %s · drawn %s" % (
             self.prices.checked, format_time_ms(self.now())[:16].replace("T", " ") + " UTC")
         if fmt == "svg":
-            text = charts.standalone_svg(data, self.tz, caption)
+            text = charts.standalone_svg(data, self.tz, caption, now_ms=self.now())
         else:
             from . import dashboard
             text = dashboard.page_from(self, data, caption)
