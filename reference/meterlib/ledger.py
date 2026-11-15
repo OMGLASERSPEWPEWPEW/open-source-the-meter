@@ -461,11 +461,12 @@ def events_between(conn, start_ms: int | None, end_ms: int | None) -> list[dict]
     return resolve_events(conn, [dict(zip(EVENT_COLUMNS, r)) for r in rows])
 
 
-def all_readings(conn) -> list[dict]:
-    """Every plan reading with its account resolved, each distinct one once at the earliest time it was seen."""
+def _resolved_readings(conn) -> list[dict]:
+    """Every reading row as the ledger keeps it (one per session and percent, at the earliest time that session
+    showed it), with its account resolved."""
     rows = conn.execute("SELECT family, window, resets_at, percent, session, account, at, source FROM readings").fetchall()
     owners, sole, schedules = session_accounts(conn), sole_accounts(conn), Schedules(conn)
-    best = {}
+    out = []
     for family, window, resets_at, percent, session, account, at, source in rows:
         if family == "claude" and schedules.active and source != "manual":
             # the schedule decides: a seven-day reading by its own reset time, any other by the account in use
@@ -475,8 +476,30 @@ def all_readings(conn) -> list[dict]:
                 account = found
         account = account or owners.get(session, "") or sole.get({"claude": "claude_code"}.get(family, family), "")
         pct = int(percent) if float(percent).is_integer() else percent
-        k = (family, account, window, resets_at, pct)
-        if k not in best or at < best[k]["at"]:
-            best[k] = {"family": family, "account": account, "window": window, "resets_at": resets_at,
-                       "percent": pct, "at": at, "source": source}
+        out.append({"family": family, "account": account, "window": window, "resets_at": resets_at, "percent": pct,
+                    "at": at, "source": source, "session": session})
+    return out
+
+
+def recorded_readings(conn) -> list[dict]:
+    """The readings as recorded, before distinct readings merge them: one per (family, account, window, resets_at,
+    percent, session), with the account resolved, at the earliest time that session showed it. A session that first
+    shows a percent after the plan reset a window's usage leaves its own reading, even when another session showed
+    that percent earlier. SPEC.md §8 finds early resets in these."""
+    best = {}
+    for r in _resolved_readings(conn):
+        k = (r["family"], r["account"], r["window"], r["resets_at"], r["percent"], r["session"])
+        if k not in best or r["at"] < best[k]["at"]:   # a limit-hit row and the same session's status line 100%: one
+            best[k] = r
+    return sorted(best.values(), key=lambda r: (r["at"], r["family"], r["account"], r["window"], r["percent"],
+                                                r["resets_at"], r["session"]))
+
+
+def all_readings(conn) -> list[dict]:
+    """Every plan reading with its account resolved, each distinct one once at the earliest time it was seen."""
+    best = {}
+    for r in _resolved_readings(conn):
+        k = (r["family"], r["account"], r["window"], r["resets_at"], r["percent"])
+        if k not in best or r["at"] < best[k]["at"]:
+            best[k] = {f: r[f] for f in ("family", "account", "window", "resets_at", "percent", "at", "source")}
     return sorted(best.values(), key=lambda r: (r["at"], r["family"], r["account"], r["window"], r["percent"]))

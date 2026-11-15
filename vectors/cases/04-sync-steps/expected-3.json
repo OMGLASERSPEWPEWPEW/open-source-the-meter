@@ -24,11 +24,13 @@
    "percent": 30,
    "reading_at": "2026-11-10T10:30:00.000Z",
    "reading_source": "statusline",
+   "reset_at": null,
    "resets_at": "2026-11-13T19:00:00.000Z",
    "shown": true,
    "spend_nano": 420000000,
    "spend_usd": "0.42",
    "start": "2026-11-06T19:00:00.000Z",
+   "tokens": 21000,
    "unattributed_usd": "0.00",
    "unpriced_events": 0,
    "window": "seven_day"
@@ -187,7 +189,7 @@
    "window": "seven_day"
   }
  ],
- "spec": "1.2",
+ "spec": "1.3",
  "totals": [
   {
    "cache_read": 0,

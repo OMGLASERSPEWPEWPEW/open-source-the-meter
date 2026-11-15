@@ -66,9 +66,9 @@ TOOLS = [
     },
     {
         "name": "meter_chart",
-        "description": "Draw the picture: write the headline and two line charts (the plan's weekly ceiling, and "
-                       "API-equivalent dollars per day) to one file in ~/.open-meter, an SVG, or HTML with the detail "
-                       "tables, and return its path so the person can open it.",
+        "description": "Draw the picture: write the chart page (per account, a card for each week and a line of "
+                       "the plan's weekly ceiling in API dollars, week over week) to one file in ~/.open-meter, an SVG "
+                       "or HTML, and return its path so the person can open it.",
         "inputSchema": {
             "type": "object",
             "properties": {"format": {"type": "string", "enum": ["svg", "html"], "default": "svg"}},

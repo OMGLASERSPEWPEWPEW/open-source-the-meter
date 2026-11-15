@@ -54,6 +54,9 @@ def cmd_ceiling(m: Meter, a) -> None:
     rows = []
     for w in c["windows"]:
         note = w["change_note"] or ("within rounding" if w["change_within_band"] else None)
+        if w.get("reset_at"):
+            reset = "the plan reset early %s; use after the reset isn't counted" % w["reset_at"][:16].replace("T", " ")
+            note = "%s; %s" % (note, reset) if note else reset
         rows.append(dict(w, used="%s%%%s" % (w["percent"], "" if w["firm"] else " early"),
                          ceiling_usd=w["ceiling_usd"] if w["shown"] else "not enough data",
                          band=("%s – %s" % (w["band_low_usd"], w["band_high_usd"] or "∞")) if w["shown"] else None,
@@ -125,7 +128,7 @@ def cmd_conformance(a) -> None:
         if now is None:
             raise ValueError("--now must be a time like 2026-11-08T20:00:00Z")
     doc = analysis.conformance(events, ledger.all_readings(conn), parse_tz(a.tz), yield_case,
-                               ledger.several_accounts(conn), now)
+                               ledger.several_accounts(conn), now, ledger.recorded_readings(conn))
     print(json.dumps(doc, indent=1, sort_keys=True, ensure_ascii=False))
 
 
@@ -158,8 +161,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--resets-at", help="when the window resets: 2026-11-20T19:00:00-06:00, or Unix seconds")
     s.add_argument("--family", default="claude", choices=["claude", "codex"])
     common(sub.add_parser("status", help="what the meter reads and where"))
-    s = common(sub.add_parser("chart", help="write the headline and both line charts to one file and print its path"))
-    s.add_argument("--html", action="store_true", help="an HTML page with the charts and the detail tables (default: SVG)")
+    s = common(sub.add_parser("chart", help="write the chart page (each account's weeks) to one file and print its path"))
+    s.add_argument("--html", action="store_true", help="the chart page as HTML (default: the same page as SVG)")
     s.add_argument("--out", help="where to write it (default: ~/.open-meter/meter-chart.svg or .html)")
     common(sub.add_parser("sync", help="read new log lines into the ledger now"))
     s = common(sub.add_parser("yield", help="Level 2: commits and lines per API dollar for a repo"))

@@ -1,15 +1,16 @@
-"""The two line charts, as inline SVG, and the sentences that lead every surface (SPEC.md §9.1, §11.3).
+"""The chart page and the sentences that lead the CLI and MCP results (SPEC.md §9.1, §11.3).
 
-Drawn from analysis.chart_data(), so the picture is exactly the ledger's numbers. No scripts: hover is each point's
-SVG <title>, and the tables under the charts hold every value. The marks follow the dataviz method: 2px lines,
-8px points with a 2px surface ring, bands as a 10% wash, hairline gridlines, ink-coloured text, a legend for two or
-more series, the categorical slots in fixed order with separate light and dark steps.
+The page is the design the user picked: per account, a card for each week (used, tokens, API-equivalent dollars,
+each "of" what the week implies) beside one line chart of the weekly limit, week over week, from $0. It is drawn
+from analysis.chart_sections(), so every number is a ceiling row's. The same page comes out as HTML or as one SVG.
+No scripts: hover is each point's SVG <title>. Dark, as picked, and light under a light system setting.
+The dashboard adds the spend chart (2px lines, the categorical slots, light and dark steps) and the tables.
 """
 
 from __future__ import annotations
 
 import html
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 
 from .util import half_up, local_dt, parse_time_ms
@@ -107,8 +108,8 @@ def spend_sentence(h: dict) -> str:
 
 # --- scales -----------------------------------------------------------------------------------------------------------
 
-def nice_top(value: Decimal) -> tuple:
-    """A clean top for a zero-based axis and its step: 4 or 5 ticks of 1, 2, 2.5 or 5 x 10^k."""
+def nice_top(value: Decimal, max_steps: int = 5) -> tuple:
+    """A clean top for a zero-based axis and its step: at most max_steps steps of 1, 2, 2.5 or 5 x 10^k."""
     if value <= 0:
         return Decimal(1), Decimal("0.25")
     exp = value.adjusted()
@@ -116,7 +117,7 @@ def nice_top(value: Decimal) -> tuple:
         for m in (Decimal(1), Decimal(2), Decimal("2.5"), Decimal(5), Decimal(10)):
             step = m * (Decimal(10) ** k)
             n = (value / step).to_integral_value(rounding="ROUND_CEILING")
-            if n <= 5:
+            if n <= max_steps:
                 return step * max(n, 1), step
     step = Decimal(10) ** (exp + 1)
     return step, step
@@ -157,79 +158,6 @@ def account_names(points: list, tz) -> dict:
     days = {a: local_dt(at, tz).strftime("%A") for a, at in last.items()}
     return {a: ("the account that resets %s" % d if a and list(days.values()).count(d) == 1
                 else "account %s" % (a or "unknown")) for a, d in days.items()}
-
-
-def ceiling_chart(points: list, tz, width: int = 720, height: int = 240, headline_account=None, now_ms=None) -> str:
-    """The implied weekly ceiling, week by week, one line per account (trusted weeks only), the band shaded."""
-    if not points:
-        return ""
-    left, right, top_pad, bottom = 56, 92, 34, 28
-    w, h = width - left - right, height - top_pad - bottom
-    times = sorted({parse_time_ms(p["resets_at"]) for p in points})
-    t0, t1 = times[0], times[-1]
-    tops = [max(_d(p["ceiling_usd"]), _d(p["band_high_usd"] or p["ceiling_usd"])) for p in points]
-    top, step = nice_top(max(tops) * Decimal("1.05"))
-
-    def x(ms):
-        return left + (w / 2 if t1 == t0 else (ms - t0) / (t1 - t0) * w)
-
-    def y(v):
-        return top_pad + h - float(min(_d(v), top) / top) * h
-
-    accounts = sorted({p["account"] for p in points})
-    names = account_names(points, tz)
-    out = ['<g role="img" aria-label="The implied weekly ceiling, week by week">']
-    out += _frame(left, top_pad, w, h, top, step)
-    last_x = None
-    for ms in times:   # a date label only where it can't touch the last one
-        if last_x is not None and x(ms) - last_x < 48:
-            continue
-        last_x = x(ms)
-        out.append('<text class="tick" x="%s" y="%s" text-anchor="middle">%s</text>'
-                   % (_f(x(ms)), _f(top_pad + h + 18), date_words(datetime.fromtimestamp(ms / 1000, tz=timezone.utc).isoformat(), tz)))
-    ends = []
-    if len(accounts) > 1 or (headline_account is not None and accounts != [headline_account]):   # say whose line it is
-        lx = left
-        for i, acct in enumerate(accounts):
-            out.append('<line class="line s%d" x1="%s" y1="14" x2="%s" y2="14"/>' % (i + 1, _f(lx), _f(lx + 16)))
-            short = names[acct].replace("the account that ", "")   # "resets Monday": three fit across the chart
-            out.append('<text class="label" x="%s" y="18">%s</text>' % (_f(lx + 22), html.escape(short)))
-            lx += 22 + 7 * len(short) + 18
-    for i, acct in enumerate(accounts):
-        s = i + 1
-        ps = [p for p in points if p["account"] == acct]
-        upper = ["%s,%s" % (_f(x(parse_time_ms(p["resets_at"]))), _f(y(p["band_high_usd"] if p["band_high_usd"] else top)))
-                 for p in ps]
-        lower = ["%s,%s" % (_f(x(parse_time_ms(p["resets_at"]))), _f(y(p["band_low_usd"]))) for p in reversed(ps)]
-        if len(ps) > 1:
-            out.append('<polygon class="w%d" points="%s"/>' % (s, " ".join(upper + lower)))
-            out.append('<polyline class="line s%d" points="%s"/>' % (s, " ".join(
-                "%s,%s" % (_f(x(parse_time_ms(p["resets_at"]))), _f(y(p["ceiling_usd"]))) for p in ps)))
-        for p in ps:
-            cx, cy = x(parse_time_ms(p["resets_at"])), y(p["ceiling_usd"])
-            still_open = now_ms is not None and parse_time_ms(p["resets_at"]) > now_ms   # its reset date is ahead
-            tip = "%s %s%s: $%s (band $%s to %s)" % (
-                "This week so far, resetting" if still_open else "Week ending",
-                date_words(p["resets_at"], tz), (" · " + names[acct]) if len(accounts) > 1 else "",
-                p["ceiling_usd"], p["band_low_usd"], ("$" + p["band_high_usd"]) if p["band_high_usd"] else "no limit")
-            fill = ('class="open s%d"' if still_open else 'class="f%d ring"') % s   # hollow: not a finished week
-            out.append('<g><title>%s</title><circle class="hit" cx="%s" cy="%s" r="10"/><circle %s cx="%s" cy="%s" r="4"/></g>'
-                       % (html.escape(tip), _f(cx), _f(cy), fill, _f(cx), _f(cy)))
-        last = ps[-1]
-        label = money_words(last["ceiling_usd"])
-        if now_ms is not None and parse_time_ms(last["resets_at"]) > now_ms:
-            label += " so far"
-        ends.append([y(last["ceiling_usd"]) + 4, x(parse_time_ms(last["resets_at"])) + 10, label, s])
-    ends.sort()
-    first_y = [e[0] for e in ends]
-    for j in range(1, len(ends)):   # end labels at least 14px apart, so two close lines keep readable labels
-        ends[j][0] = max(ends[j][0], ends[j - 1][0] + 14)
-    for (ly, lx, text, s), y0 in zip(ends, first_y):
-        if ly != y0:   # a short leader in the series colour ties a nudged label to its line
-            out.append('<line class="line s%d" style="stroke-width:1" x1="%s" y1="%s" x2="%s" y2="%s"/>' % (s, _f(lx - 9), _f(y0 - 4), _f(lx - 2), _f(ly - 4)))
-        out.append('<text class="label" x="%s" y="%s">%s</text>' % (_f(lx), _f(ly), html.escape(text)))
-    out.append("</g>")
-    return "\n".join(out)
 
 
 def spend_chart(days: list, width: int = 720, height: int = 220) -> str:
@@ -282,40 +210,355 @@ def wrap(text: str, width: int) -> list:
     return lines + [line]
 
 
-def standalone_svg(data: dict, tz, caption: str, width: int = 720, now_ms=None) -> str:
-    """One self-contained SVG: the headline, both charts and a caption. Opens in any browser or Quick Look."""
-    name = headline_name(data["headline"].get("account"), data["ceiling_points"], tz)
-    head, sub = ceiling_sentence(data["headline"], tz, name), spend_sentence(data["headline"])
-    c1 = ceiling_chart(data["ceiling_points"], tz, width, headline_account=data["headline"].get("account"), now_ms=now_ms)
-    c2 = spend_chart(data["spend_points"], width)
-    y = 0
-    lines = wrap(head, 76)
-    body = ['<rect class="bg" width="100%" height="100%"/>']
-    for i, line in enumerate(lines):
-        body.append('<text class="head" x="24" y="%d">%s</text>' % (38 + 22 * i, html.escape(line)))
-    shift = 22 * (len(lines) - 1)
-    body.append('<text class="sub" x="24" y="%d">%s</text>' % (62 + shift, html.escape(sub)))
-    y = 84 + shift
-    body.append('<text class="title" x="24" y="%d">What the plan gives you: the weekly ceiling in API dollars</text>' % (y + 14))
-    if c1:
-        body.append('<g transform="translate(0,%d)">%s</g>' % (y + 20, c1))
-        y += 20 + 240
-        body.append('<text class="note" x="24" y="%d">A lower bound: use of the same plan elsewhere (claude.ai, the desktop app, other machines) isn\'t in these logs.</text>' % (y + 14))
-        y += 28
-    else:
-        empty = ("No week with enough data yet." if data.get("has_readings")
-                 else "No plan readings yet: install the statusline wrapper, or record one with record-quota.")
-        body.append('<text class="note" x="24" y="%d">%s</text>' % (y + 36, empty))
-        y += 52
-    body.append('<text class="title" x="24" y="%d">What you use: API-equivalent dollars per day</text>' % (y + 18))
-    if c2 and any(d["usd"] != "0.00" for d in data["spend_points"]):
-        body.append('<g transform="translate(0,%d)">%s</g>' % (y + 24, c2))
-        y += 24 + 220
-    else:
-        body.append('<text class="note" x="24" y="%d">Nothing read yet.</text>' % (y + 40))
-        y += 56
-    body.append('<text class="note" x="24" y="%d">%s</text>' % (y + 18, html.escape(caption)))
-    height = y + 32
-    return ('<svg xmlns="http://www.w3.org/2000/svg" class="mc" width="%d" height="%d" viewBox="0 0 %d %d" role="img" '
-            'aria-label="%s"><title>%s</title><style>%s</style>%s</svg>\n'
-            % (width, height, width, height, html.escape(head + " " + sub), html.escape(head), style(), "\n".join(body)))
+# --- the chart page (SPEC.md §11.3) ---------------------------------------------------------------------------------
+
+TITLE = "Claude Code \u2014 weekly usage limit (API-equivalent)"
+LEDE = ("How many dollars of pay-as-you-go work each account's week allowed, from this machine's own logs.",
+        "A falling line means the plan is giving you less; a rising line, more. Each account is its own plan and its "
+        "own line.")
+CHART_TITLE = "Weekly usage limit, week over week"
+FONT = "-apple-system,'Segoe UI',Verdana,sans-serif"
+
+# Dark is the design as picked; light takes over under a light system setting. Gold is the line and its words.
+PAGE_DARK = {"bg": "#18191b", "fg": "#e6e6e6", "lede": "#a9a9a9", "small": "#888888", "gold": "#d4a72c",
+             "line": "#d4a72c", "cards": "#1c1e22", "wk": "#cfd1d4", "card": "#282a2f", "edge": "#3a3c42",
+             "big": "#dcdcdc", "em": "#8d8f94", "label": "#b9bbc0", "panel": "#2a2a2a", "plot": "#2e2e2e",
+             "plotedge": "#444444", "grid": "#3c3c3c", "tick": "#a9a9a9", "xl": "#e6e6e6"}
+PAGE_LIGHT = {"bg": "#f6f6f4", "fg": "#1d1d1f", "lede": "#55565a", "small": "#6b6c70", "gold": "#7f5a00",
+              "line": "#b8860b", "cards": "#ecece9", "wk": "#3a3b3f", "card": "#ffffff", "edge": "#d6d6d1",
+              "big": "#1d1d1f", "em": "#66676b", "label": "#44454a", "panel": "#efefec", "plot": "#fbfbfa",
+              "plotedge": "#cfcfca", "grid": "#e3e3de", "tick": "#5f6066", "xl": "#1d1d1f"}
+
+CHART_CSS = (".ct{fill:var(--p-fg);font-size:17px}.plot{fill:var(--p-plot);stroke:var(--p-plotedge)}"
+             ".grid{stroke:var(--p-grid)}.tick{fill:var(--p-tick);font-size:12px;font-variant-numeric:tabular-nums}"
+             ".ln{fill:none;stroke:var(--p-line);stroke-width:3;stroke-linejoin:round}.dot{fill:var(--p-line)}"
+             ".dot.open{fill:var(--p-plot);stroke:var(--p-line);stroke-width:2.5}.hit{fill:transparent}"
+             ".val{fill:var(--p-gold);font-size:13px}.xl{fill:var(--p-xl);font-size:12px}.xl.soft{fill:var(--p-tick)}")
+
+
+def page_vars(selector: str) -> str:
+    def block(colors):
+        return "".join("--p-%s:%s;" % kv for kv in colors.items())
+    return ("%s{color-scheme:dark;%s}@media (prefers-color-scheme:light){%s{color-scheme:light;%s}}"
+            % (selector, block(PAGE_DARK), selector, block(PAGE_LIGHT)))
+
+
+def _esc(text) -> str:
+    return html.escape(str(text))
+
+
+def dollars(text) -> str:
+    """'1234.56' -> '1,234.56': a dollar string with thousands commas."""
+    return "{:,.2f}".format(_d(text))
+
+
+def token_words(n: int) -> str:
+    """7,656,577,590 -> '7.7B': one decimal, rounded half away from zero, in the largest unit that fits."""
+    units = (("B", 10 ** 9), ("M", 10 ** 6), ("K", 10 ** 3))
+    for i, (unit, size) in enumerate(units):
+        if n >= size or (i + 1 < len(units) and half_up(Decimal(n) / units[i + 1][1], 1) >= 1000):
+            return "%s%s" % (half_up(Decimal(n) / size, 1), unit)
+    return str(n)
+
+
+def _num(value) -> str:
+    """A percent as the plan showed it: 41, or 37.5."""
+    return format(_d(value).normalize(), "f") if _d(value) != _d(value).to_integral_value() else str(int(_d(value)))
+
+
+def _signed(pct: str) -> str:
+    return pct if pct.startswith("-") or Decimal(pct) == 0 else "+" + pct
+
+
+def _day(iso: str, tz) -> str:
+    dt = local_dt(parse_time_ms(iso), tz)
+    return "%s %d" % (dt.strftime("%a, %b"), dt.day)
+
+
+def week_days(w: dict, tz) -> str:
+    """'Sat, Oct 10 – Sat, Oct 17', with 'This week · ' before a week still open."""
+    return ("This week \u00b7 " if w["open"] else "") + "%s \u2013 %s" % (_day(w["start"], tz), _day(w["resets_at"], tz))
+
+
+def week_status(w: dict) -> str:
+    """The words under the percent: hit the limit, what was left unused, or what is left of a week still open."""
+    left = _num(Decimal(100) - _d(w["percent"]))
+    if w["open"]:
+        return "%s%% left, week still open" % left
+    said = "hit the limit" if _d(w["percent"]) >= 100 else "%s%% unused" % left
+    return said + (" (use after the reset left out)" if w.get("reset_at") else "")
+
+
+def section_names(sections: list, tz) -> dict:
+    """Each section's heading and the id shown small beside it: "Account that resets Saturday" (aaaaaaaa), from the
+    weekday its latest week resets on; "Account <id>" when two share that weekday."""
+    days = {s["account"]: local_dt(parse_time_ms(s["weeks"][-1]["resets_at"]), tz).strftime("%A") for s in sections}
+    return {a: (("Account that resets %s" % d, a) if list(days.values()).count(d) == 1
+                else ("Account %s" % (a or "unknown"), "")) for a, d in days.items()}
+
+
+def section_sum(section: dict, tz) -> tuple:
+    """The header line in two parts: first and last week and the total change; the change week on week."""
+    weeks, trend = section["weeks"], section.get("trend") or {}
+    first, last = weeks[0], weeks[-1]
+    span = "%s \u2192 %s:\u00a0 " % (date_words(first["start"], tz), date_words(last["resets_at"], tz))
+    if len(weeks) == 1 or not trend.get("change_pct"):
+        return span + "$%s (one week so far)" % dollars(last["ceiling_usd"]), ""
+    total = "$%s \u2192 $%s \u00a0(%s%% total%s)" % (
+        dollars(first["ceiling_usd"]), dollars(last["ceiling_usd"]), _signed(trend["change_pct"]),
+        ", within the plan's rounding" if trend.get("direction") == "within rounding" else "")
+    steps = "Week on week:\u00a0 " + " \u00b7 ".join(_signed(w["step_pct"]) + "%" for w in weeks[1:])
+    return span + total, steps
+
+
+def footer(data: dict, tz, now_ms: int, prices_checked: str, caption=None) -> list:
+    """The notes under the page: what the figure is, its limits, what's left out, and when it was drawn."""
+    dt = local_dt(now_ms, tz)
+    lines = ["Weekly usage limit = API-equivalent dollars used in the week, divided by the percent of the week the plan "
+             "said was used, at the week's highest reading; when the plan reset a week's usage early, only the use "
+             "before the reset counts. A reset can be missed (then the week can read about double) or, from late "
+             "stale readings, made up (then a running week shows as finished); a week that reached 100% first is "
+             "right either way. It is a lower bound: use of the same plan on "
+             "claude.ai, the desktop app or "
+             "other machines isn't in these logs. Weeks with no usable reading are left out (under 20% used, no spend "
+             "on this machine, spend with no known account, or overlapping another week; the ceiling command lists "
+             "each with its reason). Right after switching accounts, spend counts toward the earlier account until a "
+             "reading shows the new one, so a week next to a switch can read too high or too low."]
+    if data.get("more_accounts"):
+        n = data["more_accounts"]
+        lines.append("%d more account%s with weeks %s not drawn here; the ceiling command lists every account."
+                     % (n, "" if n == 1 else "s", "is" if n == 1 else "are"))
+    lines.append("API list prices checked %s. Drawn %s %d, %s %s." % (
+        prices_checked, dt.strftime("%b"), dt.day, dt.strftime("%Y %H:%M"), dt.strftime("%Z") or "UTC"))
+    if caption:
+        lines.append(caption)
+    return lines
+
+
+def empty_note(data: dict) -> str:
+    if data.get("has_readings"):
+        return ("No week with enough data yet: a week shows once your plan reads 20% or more used, with spend on this "
+                "machine tied to your account.")
+    return "No plan readings yet: install the statusline wrapper (statusline-install), or record one with record-quota."
+
+
+def _week_dates(w: dict, tz) -> tuple:
+    """A week's dates under its point: 'Oct 10–17' or 'Oct 31–Nov 7', and the same on two lines."""
+    a, b = local_dt(parse_time_ms(w["start"]), tz), local_dt(parse_time_ms(w["resets_at"]), tz)
+    ends = ("%d" % b.day) if (a.year, a.month) == (b.year, b.month) else "%s %d" % (b.strftime("%b"), b.day)
+    return ("%s %d\u2013%s" % (a.strftime("%b"), a.day, ends),
+            ("%s %d\u2013" % (a.strftime("%b"), a.day), "%s %d" % (b.strftime("%b"), b.day)))
+
+
+def week_chart(weeks: list, tz, width: int = 560, height: int = 640) -> str:
+    """One account's weekly limit, week over week: a line from $0, each week a point labelled with its figure. A week
+    still open is hollow and says "so far" under its dates; each point's <title> carries its band."""
+    left, right, top, bottom = 64, 60, 54, 60
+    pw, ph = width - left - right, height - top - bottom
+    peak = max(_d(w["ceiling_usd"]) for w in weeks)
+    top_v, step = nice_top(peak * Decimal("1.1"), max_steps=6)
+    n, inset = len(weeks), 30
+    gap = (pw - 2 * inset) / (n - 1) if n > 1 else pw
+
+    def x(i):
+        return left + pw / 2 if n == 1 else left + inset + i * gap
+
+    def y(v):
+        return top + ph - float(_d(v) / top_v) * ph
+
+    out = ['<text class="ct" x="%s" y="28" text-anchor="middle">%s</text>' % (_f(width / 2), _esc(CHART_TITLE)),
+           '<rect class="plot" x="%s" y="%s" width="%s" height="%s"/>' % (left, top, pw, ph)]
+    v = Decimal(0)
+    while v <= top_v:
+        gy = y(v)
+        out.append('<line class="grid" x1="%s" y1="%s" x2="%s" y2="%s"/>' % (left, _f(gy), left + pw, _f(gy)))
+        out.append('<text class="tick" x="%s" y="%s" text-anchor="end">%s</text>' % (left - 8, _f(gy + 4), money_tick(v)))
+        v += step
+    if n > 1:
+        out.append('<polyline class="ln" points="%s"/>' % " ".join(
+            "%s,%s" % (_f(x(i)), _f(y(w["ceiling_usd"]))) for i, w in enumerate(weeks)))
+    values = [_d(w["ceiling_usd"]) for w in weeks]
+    labels, placed = {}, []
+    for i in [n - 1] + ([0] if n > 1 else []) + list(range(n - 2, 0, -1)):   # the newest week's figure first
+        cx, cy = x(i), y(values[i])
+        text = "$" + dollars(values[i])
+        wide = 7.6 * len(text)   # about the label's width at 13px
+        # Where the line isn't: above a peak, under a dip, beside a point the line runs through. Failing that, above
+        # or under; a figure that would touch another is left to its card and its tooltip.
+        near = [values[j] for j in (i - 1, i + 1) if 0 <= j < n]
+        up, down = any(v > values[i] for v in near), any(v < values[i] for v in near)
+        above, under = (cx, cy - 14, "middle"), (cx, cy + 26, "middle")
+        first = above
+        if up and down and 0 < i < n - 1:
+            rising = values[i + 1] > values[i]
+            first = (cx + (-11 if rising else 11), cy - 9, "end" if rising else "start")
+        elif up:
+            first = under
+        for lx, ly, anchor in (first, above, under):
+            x0 = {"start": lx, "end": lx - wide}.get(anchor, lx - wide / 2)
+            box = (x0, x0 + wide, ly - 13, ly + 3)
+            fits = top + 2 <= box[2] and box[3] <= top + ph - 2 and 2 <= box[0] and box[1] <= width - 2
+            if fits and not any(box[0] < b[1] and b[0] < box[1] and box[2] < b[3] and b[2] < box[3] for b in placed):
+                placed.append(box)
+                labels[i] = (lx, ly, anchor, text)
+                break
+    dates = [_week_dates(w, tz) for w in weeks]
+    two = n > 1 and max(6.6 * len(d[0]) for d in dates) > gap - 6   # too wide for their places: two lines each
+    every = 1
+    while n > 1 and two and max(6.6 * len(t) for d in dates for t in d[1]) > gap * every - 6:
+        every += 1   # still too wide: the dates of every other week (or fewer), the newest always
+    for i, w in enumerate(weeks):
+        cx, cy = x(i), y(values[i])
+        band = "band $%s to %s" % (dollars(w["band_low_usd"]),
+                                   ("$" + dollars(w["band_high_usd"])) if w["band_high_usd"] else "no limit")
+        tip = "%s%s: $%s (%s)%s" % ("This week so far, " if w["open"] else "", week_days(dict(w, open=False), tz),
+                                     dollars(w["ceiling_usd"]), band,
+                                     "; the plan reset early on %s, and use after the reset is left out"
+                                     % date_words(w["reset_at"], tz) if w.get("reset_at") else "")
+        out.append('<g><title>%s</title><circle class="hit" cx="%s" cy="%s" r="14"/>'
+                   '<circle class="dot%s" cx="%s" cy="%s" r="6"/></g>'
+                   % (_esc(tip), _f(cx), _f(cy), " open" if w["open"] else "", _f(cx), _f(cy)))
+        if i in labels:
+            lx, ly, anchor, text = labels[i]
+            out.append('<text class="val" x="%s" y="%s" text-anchor="%s">%s</text>' % (_f(lx), _f(ly), anchor, _esc(text)))
+        lines = (list(dates[i][1]) if two else [dates[i][0]]) if (n - 1 - i) % every == 0 else []
+        for j, text in enumerate(lines + (["so far"] if w["open"] else [])):
+            out.append('<text class="xl%s" x="%s" y="%s" text-anchor="middle">%s</text>'
+                       % (" soft" if text == "so far" else "", _f(cx), _f(top + ph + 20 + 15 * j), _esc(text)))
+    return "\n".join(out)
+
+
+PAGE_CSS = """body{margin:0;background:var(--p-bg);color:var(--p-fg);font:15px/1.4 %s;padding:24px 16px}
+main{max-width:1180px;margin:0 auto}
+h1{font-weight:400;font-size:22px;text-align:center;margin:0 0 4px}
+.lede{text-align:center;color:var(--p-lede);margin:0 0 28px}
+section{margin:0 0 40px}
+h2{font-weight:400;font-size:19px;text-align:center;margin:0 0 4px}h2 small{color:var(--p-small);font-size:13px}
+.sum{color:var(--p-gold);text-align:center;margin:0 0 14px;font-size:16px}
+.row{display:flex;gap:20px;flex-wrap:wrap;align-items:stretch}
+.cards{flex:1 1 480px;background:var(--p-cards);padding:6px 0 14px;min-width:0}
+.panel{flex:1 1 440px;background:var(--p-panel);padding:10px;display:flex;align-items:flex-start;min-width:0}
+.panel svg{display:block;width:100%%;height:auto}
+.wk{text-align:center;color:var(--p-wk);font-size:16px;margin:16px 0 10px}
+.card{display:flex;gap:8px;background:var(--p-card);border:1px solid var(--p-edge);border-radius:8px;margin:0 16px;padding:18px 22px}
+.card div{flex:1;min-width:0}.card b{display:block;font-size:26px;color:var(--p-big);white-space:nowrap}
+.card em{font-style:normal;font-weight:400;color:var(--p-em);font-size:20px}
+.card span{display:block;color:var(--p-label)}.card i{display:block;font-style:normal;color:var(--p-em);font-size:14px}
+.card i.g{color:var(--p-gold)}
+.note{text-align:center;color:var(--p-lede)}
+.foot{color:var(--p-em);font-size:13px;max-width:900px}
+@media (max-width:540px){.card{padding:14px 12px;margin:0 8px}.card div:last-child{flex:1.3}.card b{font-size:18px}.card em{font-size:14px}.card i{font-size:13px}}
+""" % FONT
+
+
+def page_html(data: dict, tz, now_ms: int, prices_checked: str, caption=None, extra_html: str = "",
+              extra_css: str = "") -> str:
+    """The chart page as one HTML file: no scripts, nothing loaded from elsewhere, every value escaped."""
+    sections = data.get("sections") or []
+    names = section_names(sections, tz)
+    parts = []
+    for s in sections:
+        name, ident = names[s["account"]]
+        totals, steps = section_sum(s, tz)
+        cards = []
+        for w in s["weeks"]:
+            cards.append(
+                '<div class="wk">%s</div>\n<div class="card"><div><b>%s%%</b><span>Used</span><i class="g">%s</i></div>'
+                '<div><b>%s</b><span>Tokens</span><i>of %s</i></div>'
+                '<div><b>%s <em>$</em></b><span>API-equivalent</span><i>of %s $</i></div></div>'
+                % (_esc(week_days(w, tz)), _esc(_num(w["percent"])), _esc(week_status(w)), _esc(token_words(w["tokens"])),
+                   _esc(token_words(w["tokens_ceiling"])), _esc(dollars(w["spend_usd"])), _esc(dollars(w["ceiling_usd"]))))
+        chart = ('<svg viewBox="0 0 560 640" role="img" aria-label="%s">%s</svg>'
+                 % (_esc("%s: %s" % (CHART_TITLE, name)), week_chart(s["weeks"], tz)))
+        parts.append('<section><h2>%s%s</h2>\n<p class="sum">%s</p>\n<div class="row"><div class="cards">%s</div>'
+                     '<div class="panel">%s</div></div></section>'
+                     % (_esc(name), (" <small>(%s)</small>" % _esc(ident)) if ident else "",
+                        _esc(totals + ("\u00a0\u00a0\u00a0 " + steps if steps else "")), "\n".join(cards), chart))
+    if not parts:
+        parts.append('<p class="note">%s</p>' % _esc(empty_note(data)))
+    foot = "<br>\n".join(_esc(line) for line in footer(data, tz, now_ms, prices_checked, caption))
+    return ('<!doctype html><html lang="en"><head><meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Weekly usage limit</title>\n'
+            '<style>\n%s\n%s%s%s</style></head><body><main>\n<h1>%s</h1>\n<p class="lede">%s</p>\n%s\n%s'
+            '<p class="foot">%s</p></main></body></html>\n'
+            % (page_vars(":root"), PAGE_CSS, CHART_CSS, extra_css, _esc(TITLE), "<br>\n".join(_esc(t) for t in LEDE),
+               "\n".join(parts), extra_html, foot))
+
+
+SVG_CSS = (".mp text{font-family:%s}.mp .bg{fill:var(--p-bg)}.mp .h1{fill:var(--p-fg);font-size:22px}"
+           ".mp .lede{fill:var(--p-lede);font-size:15px}.mp .h2{fill:var(--p-fg);font-size:19px}"
+           ".mp .small{fill:var(--p-small);font-size:13px}.mp .sum{fill:var(--p-gold);font-size:16px}"
+           ".mp .cards{fill:var(--p-cards)}.mp .panel{fill:var(--p-panel)}.mp .wk{fill:var(--p-wk);font-size:16px}"
+           ".mp .card{fill:var(--p-card);stroke:var(--p-edge)}.mp .big{fill:var(--p-big);font-size:26px;font-weight:700}"
+           ".mp .em{fill:var(--p-em);font-size:20px;font-weight:400}.mp .lab{fill:var(--p-label);font-size:15px}"
+           ".mp .sub{fill:var(--p-em);font-size:14px}.mp .sub.g{fill:var(--p-gold)}.mp .note{fill:var(--p-lede);font-size:15px}"
+           ".mp .foot{fill:var(--p-em);font-size:13px}" % FONT)
+
+
+def _lines(cls: str, x, y, lines: list, step: int, anchor: str = "start") -> str:
+    """One <text> with a <tspan> per line (SVG text never wraps)."""
+    spans = "".join('<tspan x="%s" dy="%s">%s</tspan>' % (_f(x), 0 if i == 0 else step, _esc(t)) for i, t in enumerate(lines))
+    return '<text class="%s" x="%s" y="%s" text-anchor="%s">%s</text>' % (cls, _f(x), _f(y), anchor, spans)
+
+
+def page_svg(data: dict, tz, now_ms: int, prices_checked: str, caption=None, width: int = 1170) -> str:
+    """The same page as one self-contained SVG, laid out by hand: it opens in any browser or Quick Look."""
+    sections = data.get("sections") or []
+    names = section_names(sections, tz)
+    mid = width / 2
+    body = ['<rect class="bg" width="100%" height="100%"/>',
+            '<text class="h1" x="%s" y="44" text-anchor="middle">%s</text>' % (_f(mid), _esc(TITLE)),
+            _lines("lede", mid, 74, list(LEDE), 20, "middle")]
+    y = 136
+    cards_x, cards_w, panel_x = 24, 540, 584
+    panel_w = width - 24 - panel_x
+    for s in sections:
+        name, ident = names[s["account"]]
+        body.append('<text class="h2" x="%s" y="%s" text-anchor="middle">%s%s</text>' % (
+            _f(mid), y, _esc(name), ('<tspan class="small" dx="8">(%s)</tspan>' % _esc(ident)) if ident else ""))
+        totals, steps = section_sum(s, tz)
+        joined = totals + ("\u00a0\u00a0\u00a0 " + steps if steps else "")
+        sums = [joined] if len(joined) <= 120 else [totals, steps]
+        body.append(_lines("sum", mid, y + 28, sums, 21, "middle"))
+        top = y + 28 + 21 * (len(sums) - 1) + 18
+        cards, cy = [], top + 6
+        for w in s["weeks"]:
+            status = wrap(week_status(w), 24)
+            ch = 98 + 17 * (len(status) - 1)
+            x0 = cards_x + 16
+            cols = (x0 + 22, x0 + 192, x0 + 330)
+            cards.append('<text class="wk" x="%s" y="%s" text-anchor="middle">%s</text>'
+                         % (_f(cards_x + cards_w / 2), cy + 28, _esc(week_days(w, tz))))
+            cards.append('<rect class="card" x="%s" y="%s" width="%s" height="%s" rx="8"/>' % (x0, cy + 40, cards_w - 32, ch))
+            base = cy + 40
+            cards.append('<text class="big" x="%s" y="%s">%s%%</text>' % (cols[0], base + 40, _esc(_num(w["percent"]))))
+            cards.append('<text class="big" x="%s" y="%s">%s</text>' % (cols[1], base + 40, _esc(token_words(w["tokens"]))))
+            cards.append('<text class="big" x="%s" y="%s">%s<tspan class="em" dx="6">$</tspan></text>'
+                         % (cols[2], base + 40, _esc(dollars(w["spend_usd"]))))
+            for col, label in zip(cols, ("Used", "Tokens", "API-equivalent")):
+                cards.append('<text class="lab" x="%s" y="%s">%s</text>' % (col, base + 62, label))
+            cards.append(_lines("sub g", cols[0], base + 83, status, 17))
+            cards.append('<text class="sub" x="%s" y="%s">of %s</text>' % (cols[1], base + 83, _esc(token_words(w["tokens_ceiling"]))))
+            cards.append('<text class="sub" x="%s" y="%s">of %s $</text>' % (cols[2], base + 83, _esc(dollars(w["ceiling_usd"]))))
+            cy += 40 + ch + 8
+        cards_h = cy - top + 8
+        chart_h = max(420, min(cards_h - 20, 640))
+        col_h = max(cards_h, chart_h + 20)
+        body.append('<rect class="cards" x="%s" y="%s" width="%s" height="%s"/>' % (cards_x, top, cards_w, col_h))
+        body.append('<rect class="panel" x="%s" y="%s" width="%s" height="%s"/>' % (panel_x, top, panel_w, col_h))
+        body += cards
+        body.append('<g transform="translate(%s,%s)" role="img" aria-label="%s">%s</g>' % (
+            panel_x, top + 10, _esc("%s: %s" % (CHART_TITLE, name)), week_chart(s["weeks"], tz, panel_w, chart_h)))
+        y = top + col_h + 52
+    if not sections:
+        body.append('<text class="note" x="%s" y="%s" text-anchor="middle">%s</text>' % (_f(mid), y, _esc(empty_note(data))))
+        y += 40
+    for line in footer(data, tz, now_ms, prices_checked, caption):
+        wrapped = wrap(line, 150)
+        body.append(_lines("foot", 24, y, wrapped, 18))
+        y += 18 * len(wrapped) + 6
+    height = y + 14
+    return ('<svg xmlns="http://www.w3.org/2000/svg" class="mp" width="%d" height="%d" viewBox="0 0 %d %d" role="img" '
+            'aria-label="%s"><title>%s</title><style>%s%s%s</style>\n%s\n</svg>\n'
+            % (width, height, width, height, _esc(TITLE), _esc(TITLE), page_vars(".mp"), SVG_CSS,
+               "".join(".mp " + rule + "}" for rule in CHART_CSS.split("}") if rule), "\n".join(body)))

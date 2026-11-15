@@ -18,14 +18,17 @@ def _cell(v) -> str:
     return html.escape("–" if v is None else str(v))
 
 
-def page_from(meter: Meter, data: dict, caption: str) -> str:
-    """The page, picture first (SPEC.md §11.3): the headline, the two charts, then the tables for detail. The same
-    page is the live dashboard and the file `chart --html` writes. No scripts; nothing from elsewhere."""
-    head = charts.ceiling_sentence(data["headline"], meter.tz,
-                                   charts.headline_name(data["headline"].get("account"), data["ceiling_points"], meter.tz))
+DETAIL_CSS = """.detail{max-width:900px;margin:0 auto 40px}.detail h2{text-align:left;margin:28px 0 6px}
+.muted{color:var(--p-lede);font-size:13px;margin:4px 0 0}svg.mc{width:100%;height:auto;display:block}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid var(--p-edge);padding:6px 4px;text-align:left}
+.num{text-align:right;font-variant-numeric:tabular-nums}.wrap{overflow-x:auto}
+"""
+
+
+def detail(meter: Meter, data: dict) -> str:
+    """Below the chart page, on the dashboard only: what you use per day, spend by model, and every ceiling row with
+    its note and unattributed spend."""
     sub = charts.spend_sentence(data["headline"])
-    c1 = charts.ceiling_chart(data["ceiling_points"], meter.tz, headline_account=data["headline"].get("account"),
-                              now_ms=meter.now())
     c2 = charts.spend_chart(data["spend_points"])
     models = meter.summary("7d", group_by="model")
     rows = "".join(
@@ -40,46 +43,27 @@ def page_from(meter: Meter, data: dict, caption: str) -> str:
            ("$%s – %s" % (_cell(w["band_low_usd"]), _cell(("$" + w["band_high_usd"]) if w["band_high_usd"] else "no limit")))
            if w["shown"] else "",
            _cell(w["unattributed_usd"]),
-           _cell((w["change_pct"] + "%" + (" (within rounding)" if w["change_within_band"] else ""))
-                 if w["change_pct"] else (w["change_note"] or "–")))
+           _cell(((w["change_pct"] + "%" + (" (within rounding)" if w["change_within_band"] else ""))
+                  if w["change_pct"] else (w["change_note"] or "–"))
+                 + (" · the plan reset early; use after the reset isn't counted" if w.get("reset_at") else "")))
         for w in reversed(data["rows"]))
-    chart1 = ('<svg class=mc viewBox="0 0 720 240" role=img aria-label="%s">%s</svg>'
-              '<p class=muted>A lower bound: use of the same plan elsewhere (claude.ai, the desktop app, other '
-              'machines) isn\'t in these logs.</p>' % (html.escape(head), c1)) if c1 else (
-              '<p class=muted>No week with enough data yet.</p>' if data.get("has_readings") else
-              '<p class=muted>No plan readings yet: install the statusline wrapper (statusline-install), or record '
-              'one with record-quota.</p>')
     chart2 = ('<svg class=mc viewBox="0 0 720 220" role=img aria-label="%s">%s</svg>' % (html.escape(sub), c2)
               if any(d["usd"] != "0.00" for d in data["spend_points"]) else '<p class=muted>Nothing read yet.</p>')
-    return """<!doctype html><html lang=en><head><meta charset=utf-8>
-<meta name=viewport content="width=device-width, initial-scale=1"><title>The meter</title>
-<style>
-:root{--bg:#f9f9f7;--fg:#0b0b0b;--muted:#52514e;--line:#e1e0d9}
-@media (prefers-color-scheme:dark){:root:where(:not([data-theme=light])){--bg:#0d0d0d;--fg:#f0efec;--muted:#c3c2b7;--line:#2c2c2a}}
-:root[data-theme=dark]{--bg:#0d0d0d;--fg:#f0efec;--muted:#c3c2b7;--line:#2c2c2a}
-body{background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0 auto;max-width:760px;padding:24px 16px}
-h1{font-size:22px;line-height:1.3;margin:0 0 6px;font-weight:600}.lead{font-size:16px;margin:0 0 20px;color:var(--muted)}
-h2{font-size:15px;margin:28px 0 6px}.muted{color:var(--muted);font-size:13px;margin:4px 0 0}
-svg.mc{width:100%%;height:auto;display:block}
-table{border-collapse:collapse;width:100%%;font-size:14px}td,th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
-.num{text-align:right;font-variant-numeric:tabular-nums}.wrap{overflow-x:auto}
-%s
-</style></head><body>
-<h1>%s</h1>
-<p class=lead>%s</p>
-<h2>What the plan gives you: the weekly ceiling in API dollars</h2>%s
-<h2>What you use: API-equivalent dollars per day</h2>%s
+    return ("""<div class="detail mc">
+<h2>What you use: API-equivalent dollars per day</h2><p class=muted>%s</p>%s
 <h2>Last 7 days by model: $%s</h2><div class=wrap><table><tr><th>Model</th><th class=num>Requests</th><th class=num>Dollars</th></tr>%s</table></div>
 <h2>The weekly ceilings in detail</h2><div class=wrap><table><tr><th>Account</th><th>Week ending</th><th class=num>Used</th><th class=num>Spent</th><th class=num>Ceiling</th><th class=num>Band</th><th class=num>Unattributed</th><th>Change</th></tr>%s</table></div>
-<p class=muted>%s</p>
-</body></html>""" % (
-        charts.style(), html.escape(head), html.escape(sub), chart1, chart2, html.escape(models["total_usd"]), rows,
-        wins or "<tr><td colspan=8 class=muted>No plan readings yet.</td></tr>", html.escape(caption))
+</div>
+""" % (html.escape(sub), chart2, html.escape(models["total_usd"]), rows,
+       wins or "<tr><td colspan=8 class=muted>No plan readings yet.</td></tr>"))
 
 
 def page(meter: Meter) -> str:
-    return page_from(meter, meter.chart_data(),
-                     "The meter, from this machine's local logs · API list prices checked %s" % meter.prices.checked)
+    """The dashboard: the chart page (SPEC.md §11.3), then the spend chart and the tables. No scripts; nothing from
+    elsewhere; every value escaped."""
+    data = meter.chart_data()
+    return charts.page_html(data, meter.tz, meter.now(), meter.prices.checked, extra_html=detail(meter, data),
+                            extra_css=charts.style() + DETAIL_CSS)
 
 
 def make_handler(meter: Meter, port: int):

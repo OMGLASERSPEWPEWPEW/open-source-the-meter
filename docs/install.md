@@ -108,8 +108,8 @@ move, your old status line still shows, because the command falls back to it, bu
 ## 4. The picture, any time
 
 ```sh
-"$PY" -B -I "$METER" chart            # ~/.open-meter/meter-chart.svg: the headline and both line charts
-"$PY" -B -I "$METER" chart --html     # ~/.open-meter/meter-chart.html: the same, with the detail tables
+"$PY" -B -I "$METER" chart            # ~/.open-meter/meter-chart.svg: each account's weeks, cards and a line
+"$PY" -B -I "$METER" chart --html     # ~/.open-meter/meter-chart.html: the same page as HTML
 ```
 
 Both are one self-contained file with no scripts. Open them in any browser, or with Quick Look on a Mac. In an MCP

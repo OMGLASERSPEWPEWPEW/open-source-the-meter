@@ -6,8 +6,14 @@ Date: 2026-11-14 · Scope: SPEC.md, `reference/`, `vectors/`, AGENTS.md, the doc
 
 Run on macOS's Python 3.9 (`/usr/bin/python3`) and on a newer one:
 
-- [x] `python3 -B -I vectors/run.py`: 8 of 8 cases pass. That's 10 runs, counting each step.
-- [x] `python3 -B -I -m unittest discover -s reference/tests`: 50 tests pass. They cover:
+- [x] `python3 -B -I vectors/run.py`: 10 of 10 cases pass. That's 12 runs, counting each step.
+- [x] `python3 -B -I -m unittest discover -s reference/tests`: 68 tests pass. They cover:
+  - a plan that resets a week's usage early, a reset only a new session saw (found in the readings as recorded),
+    a reset after 100% that no one saw, stale lower readings, a lone low reading, ties, a firm week with no spend
+    here, and the tokens a week counts;
+  - the chart page: the open week, the week the plan reset early, no zero or unfirm week as a card or a point, the
+    numbers equal to the ceiling rows', every value escaped, the SVG well-formed, eight weeks with no two labels
+    touching, the token words;
   - the MCP handshake and errors, its argument checks, and output limits;
   - accounts by reset schedule: a switch under a running session, two folders sharing a schedule, an unnamed
     schedule, manual readings, a `subagents` folder above the logs;
@@ -67,11 +73,18 @@ Use a throwaway home first: `OPEN_METER_HOME="$(mktemp -d)"`.
     pinned by the unit tests);
   - the daily series with its 7-day average;
   - both sparklines.
-- [ ] **The dashboard's opening.** With a temp home synced from case 07's logs, the page opens with:
-  - the headline: the ceiling with "down", its percent and the first week's date, then the 7-day spend sentence;
-  - the ceiling chart: one line per account, the band shaded, only trusted weeks, the lower-bound note under it;
-  - the spend chart: 30 days, with the 7-day average as the stronger line;
-  - the tables, below the charts. (A person checks the look in light and dark mode.)
+- [ ] **The chart page.** With a temp home synced from case 07's logs (or 09's, for two accounts, an open week
+  and a reset), `chart --html` and `chart` show:
+  - the title and its two lines; per account, the header line with the first and last ceiling, the total change
+    and the change week on week;
+  - a card per trusted week, oldest first, with used, tokens and dollars, each "of" the whole week; "This week" and
+    "left, week still open" on a week still running; "(use after the reset left out)" on a week the plan reset
+    early;
+  - the line chart from $0, a labelled point per card, the open week hollow with "so far";
+  - the notes under it, and the drawn-at line. (A person checks the look in light and dark mode, and at phone
+    width.)
+- [ ] **The dashboard.** The same page, then the spend chart (30 days, the 7-day average as the stronger line) and
+  the tables.
 - [ ] **Hover.** Hovering a point shows its date and value, through the browser's own tooltip.
 - [ ] **No scripts.** The page still has no `<script>` and loads nothing from elsewhere.
 - [ ] **Empty states.** With no readings, the ceiling chart's place says how to get them. With no events, the spend
@@ -85,8 +98,10 @@ Use a throwaway home first: `OPEN_METER_HOME="$(mktemp -d)"`.
 
 ## Plain numbers (FR-46, from the stranger test)
 
-- [ ] A week under 20% used, or one mostly made of spend with no known account, reads "not enough data", never a
-  dollar figure, and isn't on the chart.
+- [ ] A week under 20% used, one with no spend on this machine, or one mostly made of spend with no known account,
+  reads "not enough data", never a dollar figure, and is never a card or a point on the chart.
+- [ ] A week the plan reset early (its percent back near 0 under the same reset time) counts only the use before
+  the reset, at the week's highest reading, and says so; a lower later reading is never the one chosen.
 - [ ] Overlapping weeks for one account say "an early reset" or "two reset schedules mixed", not a question.
 - [ ] `sync` and `status` give the same number of plan readings.
 - [ ] `sync` says "repeated log lines for one response, skipped so nothing counts twice".

@@ -1,6 +1,6 @@
 # Open-source the meter
 
-![The meter's chart: a weekly ceiling sliding from $100 to $76 over six weeks while daily use rises from $5 to $6](docs/meter-chart.svg)
+![The meter's chart: one account's weekly usage limit in API dollars, a card for each of six weeks beside a line sliding from $100 to $76](docs/meter-chart.svg)
 
 *The picture the meter draws from your own logs. This one is made from synthetic test data
 ([vectors/cases/07-trends](vectors/cases/07-trends)), not anyone's real use.*
@@ -73,14 +73,15 @@ python3 -B -I reference/meter.py sync                     # first sync into ~/.o
 claude mcp add --scope user open-meter -- "$(command -v python3)" -I "$PWD/reference/meter.py" mcp
 python3 -B -I reference/meter.py statusline-install       # shows the change; add --apply to make it
 python3 -B -I reference/meter.py ceiling
-python3 -B -I reference/meter.py chart                    # writes ~/.open-meter/meter-chart.svg (--html adds the tables)
+python3 -B -I reference/meter.py chart                    # writes ~/.open-meter/meter-chart.svg (--html: the same page as HTML)
 ```
 
 - **Requirements:** Python 3.9 or later, standard library only. No packages, no network, nothing running in the
   background.
 - **MCP tools:** `meter_summary`, `meter_ceiling`, `meter_chart`, `meter_record_quota`, `meter_status` and `meter_yield`.
 - **More:** the CLI has the same reports plus `chart` (one SVG or HTML file of the picture) and `dashboard` (the
-  same page on 127.0.0.1). Codex, Cursor and Claude Desktop setup is in [docs/install.md](docs/install.md).
+  same page on 127.0.0.1, with daily spend and the tables under it). Codex, Cursor and Claude Desktop setup is in
+  [docs/install.md](docs/install.md).
 - **Sync early.** The meter keeps every response it has read, even after Claude Code deletes old transcripts (by
   default after 30 days). History it never read is gone, so run the first sync soon.
 - **Your own version:** build it in any language from [SPEC.md](SPEC.md), then prove it:
@@ -88,8 +89,12 @@ python3 -B -I reference/meter.py chart                    # writes ~/.open-meter
 
 ## What the numbers mean
 
-**Rising or falling, at a glance.** Every report leads with a sentence and a small line chart (a sparkline in the
-terminal):
+**The picture.** For each account, a card for every week: how much of the week the plan says you used, and the
+tokens and API-equivalent dollars that was, each next to what the whole week holds. Beside the cards, one line of the
+week's limit in API dollars, week over week, from $0. A week still running says so, and its point is hollow.
+
+**Rising or falling, at a glance.** Every report in the terminal leads with a sentence and a small line chart (a
+sparkline):
 
 - **Your plan's week:** what it's worth now, and how that compares with your first firm week in the last eight.
 - **Your use:** your last 7 days of API-equivalent use against the 7 days before.
@@ -116,7 +121,17 @@ Read it with these limits in mind. The meter states them in its reports too.
     computer, Codex in the cloud) adds to the percent, while the logs here only hold this computer's use. The real
     ceiling is at least this high.
   - **The percent is a whole number.** The meter gives a band: the ceiling for any percent one point either side.
-  - **Early readings are rough.** A week under 20% used shows "not enough data", not a dollar figure.
+  - **Early readings are rough.** A week under 20% used shows "not enough data", not a dollar figure. So does a week
+    with no spend on this computer: its use went to another account, or happened elsewhere.
+- **A week counts up to its highest reading.** The plan's percent only rises within a week, so a lower reading later
+  on is an idle session's status line repeating an old number, and the meter passes over it. When the plan resets a
+  week's usage early but keeps its reset day (the percent drops to near 0 and climbs again), only the use before the
+  reset counts, and the week says so. The meter sees such a reset when some session shows a low percent it hadn't
+  shown earlier that week, as a session started after the reset does, and the next reading stays low. It can miss
+  one: when the only sessions climbing after the reset had already shown those low percents, their next reading is
+  back near the old high, and the week can read about double. And late, stale low readings (a backfill, a wrapper
+  installed in the middle of a week) can look like a reset: the running week is then shown as finished. When a week
+  reached 100% first, its figure is right either way.
 - **Each account is kept apart.** If you switch between Claude accounts, each account's weeks are kept separate.
   Signing in to another account switches every running Claude Code session without a word in the logs, so the
   meter tells the accounts apart by when each one's week resets, and the chart names them that way ("the account

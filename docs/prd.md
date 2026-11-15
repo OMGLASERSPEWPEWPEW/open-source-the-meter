@@ -391,9 +391,11 @@ which account and session, which window, the percent, the reset time, when it wa
   - Scope: a mark for the reader, not a filter: a not-firm row and its change still show.
 - **FR-28 One figure per window.**
   - Trigger: `ceiling`, `meter_ceiling`, the dashboard.
-  - Behavior: a window can have many readings. Its figure comes from its latest reading, a tie going to the higher
-    percent (SPEC.md §8). The percent only rises within a window, so the latest reading is firm whenever any is. Each
-    row says which reading it used, when, and from where.
+  - Behavior: a window can have many readings. Its figure comes from its highest reading, the first time it showed
+    (SPEC.md §8). The percent only rises within a window, so a lower later reading is stale: an idle session's status
+    line repeating what it last heard. When the plan resets a window's usage early and keeps its reset time, only the
+    readings and the use before the reset count, and the row says when the reset came (`reset_at`). Each row says
+    which reading it used, when, and from where, and how many tokens its spend stands for.
   - Error state: windows that overlap are handled by FR-29's notes, not merged.
   - Saved data: none.
   - Scope: per product, account and window.
@@ -460,8 +462,8 @@ which account and session, which window, the percent, the reset time, when it wa
   - Trigger: the person runs `dashboard`. Nothing else starts it, at login or otherwise.
   - Behavior: serves one read-only page, and the summary as JSON, on 127.0.0.1 only, on the port SPEC.md §11.3 sets
     or the one the person gives. It runs in the foreground until the person stops it. Each page load syncs (FR-11).
-    The page leads with the picture (FR-43): a plain-words headline, then two line charts, then the tables for
-    detail.
+    The page leads with the picture (FR-43): the chart page (per account, a card per week beside a line chart of the
+    weekly ceiling), then the line chart of daily spend, then the tables for detail.
   - Error state: a port in use is an error that names the port option. A request with a Host other than the loopback
     address or `localhost` is refused (DNS rebinding), and so are cross-site requests and anything but a read
     (SPEC.md §11.3).
@@ -510,44 +512,44 @@ which account and session, which window, the percent, the reset time, when it wa
 - **FR-46 Only meaningful numbers; plain words for the rest** (from the 2026-11-14 stranger test on real logs).
   - Trigger: any ceiling row, any sync report.
   - Behavior:
-    - A window that isn't firm, or whose spend with no known account is more than its own, shows "not enough
-      data" instead of a dollar figure, and stays off the chart (SPEC.md §8, `shown`).
+    - A window that isn't firm, that has no spend on this machine, or whose spend with no known account is more
+      than its own, shows "not enough data" instead of a dollar figure, and is never a point or a card on the chart
+      (SPEC.md §8, `shown`).
     - Overlapping windows say which they are: "an early reset", "two reset schedules mixed (likely two accounts,
       or two limits, in one)", or "the same window read twice" when the reset time only moved a little.
     - `sync` and `status` count plan readings the same way, as distinct readings.
     - `sync` says repeats plainly: "repeated log lines for one response, skipped so nothing counts twice".
   - Scope: the trend (FR-42) never uses a window that isn't shown or that overlaps another.
 - **FR-43 The dashboard leads with the picture.**
-  - Trigger: the dashboard page loads (FR-34).
-  - Behavior, top to bottom:
-    1. A headline in plain words, for example "Your plan's week is worth about $76 of API use, down 24% since
-       Oct 4", and the spend sentence, for example "You used $42 in the last 7 days, up 20% from the week before".
-       The account it describes is the one in use now.
-    2. A line chart of what the plan gives you: the implied weekly ceiling, week by week, one line per account, the
-       band shaded around it, only the weeks with enough data (FR-46), and the lower-bound note under it.
-    3. A line chart of what you use: API-equivalent dollars per day for the last 30 days, with the 7-day average as
-       the stronger line.
-    4. The tables (spend by model, the ceilings with their notes), for detail.
-  - Error state: no readings yet gives the first chart's place to a sentence saying how to get them (the wrapper,
-    or record-quota); no events gives the spend chart's place to a sentence saying nothing has been read yet.
+  - Trigger: the dashboard page loads (FR-34), or `chart` writes the page to a file.
+  - Behavior, top to bottom (the design the user picked, 2026-11-14: "Make it like this. My numbers but like
+    this"):
+    1. The chart page (SPEC.md §11.3): a title and two lines saying what the figure is; then per account, a header
+       line with its first and last weekly ceiling, the change between them and the change week on week; a card per
+       week (used, tokens, API-equivalent dollars, each "of" what the whole week holds; "This week" for one still
+       open; a note when the plan reset early) beside one line chart of the weekly ceiling, week over week, from $0,
+       each week a labelled point. Only the weeks with enough data (FR-46), and the lower-bound note under it all.
+    2. On the dashboard only: a line chart of what you use, API-equivalent dollars per day for the last 30 days with
+       the 7-day average as the stronger line, and the tables (spend by model, the ceilings with their notes).
+  - Error state: no readings yet gives the sections' place to a sentence saying how to get them (the wrapper, or
+    record-quota); no events gives the spend chart's place to a sentence saying nothing has been read yet.
   - Saved data: none.
-  - Scope: inline SVG, no scripts, nothing loaded from elsewhere (FR-34). Hover shows each point's values through
-    the browser's own tooltip; every value is also in the tables. Light and dark come from the person's system
-    setting. Colours, marks and labels follow the dataviz rules recorded in SPEC.md §11.3.
+  - Scope: inline SVG, no scripts, nothing loaded from elsewhere (FR-34). Hover shows each point's dates, figure and
+    band through the browser's own tooltip. Dark as picked, light under a light system setting.
 - **FR-44 The same shape in text: CLI and MCP.**
   - Trigger: `summary`, `ceiling` and the new `chart` command; `meter_summary` and `meter_ceiling`.
   - Behavior: each leads with a one-line trend sentence and a Unicode sparkline (`▁▂▃▄▅▆▇█`): the last 30 days of
     spend for `summary`, and the account's recent weeks for `ceiling`. The MCP results carry the same sentence and
     sparkline, plus the trend numbers (FR-42), so an AI can say "rising" or "falling" without reading a table.
-    `chart` writes the headline and both charts to `~/.open-meter/meter-chart.svg` (or `--html`, or `--out <file>`)
-    and prints its path with the sentences and sparklines.
+    `chart` writes the chart page to `~/.open-meter/meter-chart.svg` (or `--html`, or `--out <file>`) and prints
+    its path with the sentences and sparklines.
   - Error state: as FR-42 (too little data is said in words).
   - Saved data: `chart --out` writes only the file it's given.
   - Scope: the sentence and sparkline come first; the details follow as before.
 - **FR-45 The README shows the chart.**
   - Trigger: someone opens the repo.
-  - Behavior: the README opens with an image of the dashboard's headline and charts, made by `chart --out` from the
-    synthetic vector case for trends, never from real logs. Its "show me my numbers" step leads to the chart.
+  - Behavior: the README opens with an image of the chart page, made by `chart --out` from the synthetic vector
+    case for trends, never from real logs. Its "show me my numbers" step leads to the chart.
   - Scope: the image is regenerated whenever the drawing changes; it carries a caption saying it's synthetic.
 
 ### Conformance (FR-37 – FR-40)
@@ -569,6 +571,9 @@ which account and session, which window, the percent, the reset time, when it wa
       only from sessions inside the repo.
     - **Hostile input:** odd text stays text; mistyped or absurd counts read as zero; a bad account id is ignored; a
       symlinked log is never read.
+    - **Trends, an account switch, a plan reset:** the 7-day and week-over-week trends and the chart's points;
+      accounts told apart by reset schedule; a week the plan reset early, a stale lower reading, and a firm week
+      with no spend on this machine; a reset only a new session saw, found in the readings as recorded.
   - Error state: none.
   - Saved data: the cases, in the repo. They use a frozen copy of the price list, so updating `prices.json` never
     changes an expected answer. The expected files were checked against arithmetic done by hand.
@@ -669,9 +674,9 @@ neither, and the ADRs say why.
 The picture is the product (the user, 2026-11-14: "we want to see a visual line graph or costs over time based on
 usage so a person at a glance can see if costs are rising or falling. A table shows none of that.").
 
-- **Every surface leads with the trend.** The dashboard, the CLI and the MCP text each start with a sentence that
-  says which way things are going and by how much, then a chart: an SVG line chart on the page, a sparkline in
-  text (FR-42 – FR-44).
+- **Every surface leads with the trend.** The CLI and the MCP text each start with a sentence that says which way
+  things are going and by how much, then a sparkline. The page starts with each account's header line, first and
+  last week and the change, then its cards and its line chart (FR-42 – FR-44).
 - **The facts are the same everywhere.** Every surface then shows:
   - the period and its API-equivalent spend, with any unpriced models named;
   - each window's ceiling with its band, its firm mark, and its change or the note that says why there's none;

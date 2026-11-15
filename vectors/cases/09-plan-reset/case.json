@@ -1,0 +1,8 @@
+{
+  "tz": "UTC",
+  "prices": "../../prices.json",
+  "claude_dir": "claude",
+  "quota_file": "quota.jsonl",
+  "now": "2026-11-15T12:00:00Z",
+  "description": "A plan that resets a week's usage early, keeping its reset time: only the use before the reset counts, at the week's highest reading. A lower later reading is stale, not chosen. A firm week with no spend on this machine has no dollar figure and is never plotted."
+}

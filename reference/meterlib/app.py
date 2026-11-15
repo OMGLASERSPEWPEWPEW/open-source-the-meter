@@ -151,7 +151,8 @@ class Meter:
         start = min(r["resets_at"] for r in readings) * 1000 - length * 1000
         keep = max(1, min(int(count), 52))
         rows, per_account = [], {}
-        all_rows = analysis.ceilings(self._events(start, None), readings, ledger.several_accounts(self.conn))
+        recorded = [r for r in ledger.recorded_readings(self.conn) if r["family"] == family and r["window"] == window]
+        all_rows = analysis.ceilings(self._events(start, None), readings, ledger.several_accounts(self.conn), recorded)
         for row in reversed(all_rows):
             n = per_account.get(row["account"], 0)
             if n < keep:
@@ -195,8 +196,10 @@ class Meter:
         readings = [r for r in ledger.all_readings(self.conn) if r["family"] == "claude" and r["window"] == "seven_day"]
         start = min([r["resets_at"] * 1000 - 8 * DAY_MS for r in readings] + [now - 40 * DAY_MS])
         events = self._events(start, None)
-        rows = analysis.ceilings(events, readings, ledger.several_accounts(self.conn))
+        recorded = [r for r in ledger.recorded_readings(self.conn) if r["family"] == "claude" and r["window"] == "seven_day"]
+        rows = analysis.ceilings(events, readings, ledger.several_accounts(self.conn), recorded)
         data = analysis.chart_data(events, rows, now, self.tz)
+        data.update(analysis.chart_sections(rows, now))
         per = {}
         for r in rows:
             per.setdefault(r["account"], []).append(r)
@@ -204,8 +207,8 @@ class Meter:
         return data
 
     def chart(self, fmt: str = "svg", out=None, caption=None) -> dict:
-        """Write the headline and both charts to one self-contained file (SVG, or HTML with the tables too) in the
-        meter's home, and say where it is."""
+        """Write the chart page (SPEC.md §11.3) to one self-contained file, SVG or HTML, in the meter's home or at
+        `out`, and say where it is, with the two sentences and sparklines."""
         from . import charts
         if fmt not in ("svg", "html"):
             raise MeterError("format must be svg or html")
@@ -215,13 +218,8 @@ class Meter:
             path = os.path.join(path, "meter-chart.%s" % fmt)
         if os.path.splitext(path)[1].lower() != "." + fmt:
             raise MeterError("--out must end in .%s%s" % (fmt, "" if fmt == "html" else " (or .html with --html)"))
-        caption = caption or "The meter, from this machine's local logs · API list prices checked %s · drawn %s" % (
-            self.prices.checked, format_time_ms(self.now())[:16].replace("T", " ") + " UTC")
-        if fmt == "svg":
-            text = charts.standalone_svg(data, self.tz, caption, now_ms=self.now())
-        else:
-            from . import dashboard
-            text = dashboard.page_from(self, data, caption)
+        draw = charts.page_svg if fmt == "svg" else charts.page_html
+        text = draw(data, self.tz, self.now(), self.prices.checked, caption)
         try:
             write_private(path, text)
         except OSError as exc:

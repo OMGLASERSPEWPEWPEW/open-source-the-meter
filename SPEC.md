@@ -1,7 +1,8 @@
 # SPEC: the meter
 
-Version 1.2 · 2026-11-14 (1.1 adds §9.1, `shown`, the plain-words notes and the `trend` and `chart` parts; 1.2 adds
-§3.8, accounts by reset schedule)
+Version 1.3 · 2026-11-14 (1.1 adds §9.1, `shown`, the plain-words notes and the `trend` and `chart` parts; 1.2 adds
+§3.8, accounts by reset schedule; 1.3 adds resets within a window, stale readings, `reset_at` and `tokens` to §8, no
+figure for a week with no spend here, and the chart page of §11.3)
 
 This is the contract. An implementation in any language that follows it, and prints the same conformance document
 for every case in `vectors/` (§12), is a conforming meter. `reference/` is one such implementation, in Python 3.9+
@@ -426,7 +427,8 @@ It's appended to `quota.jsonl` as `source: "manual"`.
 After accounts are resolved (§3.7), readings with the same `(family, account, window, resets_at, percent)` are one
 reading. It keeps the earliest `at`, and that earliest reading's `source`.
 
-A reading is taken when the percent first shows a new value. Later redraws at the same value add nothing.
+A reading is taken when the percent first shows a new value. Later redraws at the same value add nothing. The
+ceiling (§8) also looks at the readings before this merge, one per session, to find a plan's early reset.
 
 ## 7 Sync and ledger
 
@@ -486,20 +488,48 @@ window.
 
 **For each group:**
 
-1. **The chosen reading** is the one with the latest `at`; a tie goes to the higher percent. If its percent is 0,
-   the group gives no row. Let `p` be its percent, `R` its `resets_at`, and `T` its `at`.
-2. **The window** starts at `start = R − length`.
-3. **The events in range** are those whose `source` belongs to the family (`claude` → `claude_code`, `codex` →
+Within one window the plan's percent never falls, except when the plan resets the window's usage early. A plan can
+do that and keep the window's reset time: the readings drop to near 0 and climb again under the same `resets_at`.
+And a session that sat idle repeats its last-heard percent when its status line redraws, so a later reading can be
+lower than the truth: it is stale.
+
+1. **Resets within a window.** Resets are found in the group's **recorded readings**: the readings as their sources
+   gave them, before §6.6 merges them. Accounts are resolved first, as for distinct readings (§3.7, §3.8); then
+   readings with the same `(family, account, window, resets_at, percent, session)` are one, at the earliest `at`,
+   with that reading's `source` (a limit-hit reading and the same session's status line 100% are one). They are
+   grouped as above. A recorded reading taken at or after its own `resets_at` is left out: it can't be a reset inside
+   its window. The reason for recorded readings: a distinct reading keeps a percent once, at the first time any
+   session showed it, so after a reset the climb through percents the window already showed (1%, 2%, ...) leaves no
+   new distinct reading, and the reset can't be seen there. A session that first shows such a percent after the
+   reset, such as a session started after it, leaves its own recorded reading.
+
+   Go through the group's recorded readings in order of `at` (a tie: the lower percent first, then the earlier
+   `resets_at`, then the session). A reading is a **reset** when all of these hold:
+   - its percent is 10 or less;
+   - an earlier recorded reading of the group is at 20 or more;
+   - the group's next recorded reading, if there is one, is also more than 10 points below the highest percent
+     before the reset.
+
+   A single low reading followed by one back near the high is a stale repeat, not a reset. Only the distinct
+   readings (§6.6) with `at` before the first reset's `at` count. Use after the reset belongs to an allowance the
+   plan gave on top, so it is left out.
+2. **The chosen reading** is, of the distinct readings that count, the one with the highest percent; a tie goes to the
+   earliest `at`, then the earlier `resets_at`. A lower reading after it is stale. At the limit the percent stays at
+   100 while use is blocked, so the first 100% is when the window was used up. If the chosen percent is 0, the group
+   gives no row. Let `p` be its percent, `R` its `resets_at`, and `T` its `at`.
+3. **The window** starts at `start = R − length`.
+4. **The events in range** are those whose `source` belongs to the family (`claude` → `claude_code`, `codex` →
    `codex`) and whose time is in `start ≤ at ≤ T`. Both ends are included.
-4. **The sums over those events:**
+5. **The sums over those events:**
 
    | Sum | Which events in range |
    |---|---|
    | `spend` | priced events whose account is the group's. When the group's account is `""`: events with account `""`, or any account if the family has used only one |
    | `unpriced_events` | a count of the unpriced ones among those |
+   | `tokens` | `input + cache_read + cache_write + cache_write_1h + output` (§3.4) over the events counted in `spend` and `unpriced_events`. Cache reads are most of it |
    | `unattributed` | priced events that may or may not be this window's account, reported and left out: events with account `""` when the group's account is known; and, when the group's account is `""` and the family's source has named more than one account (§3.7), events with a known account |
 
-5. **The figures:**
+6. **The figures:**
 
    | Figure | Value |
    |---|---|
@@ -507,15 +537,16 @@ window.
    | `band_low` | `spend × 100 / (p + 1)` |
    | `band_high` | `spend × 100 / (p − 1)` when `p > 1`, else `null` (open) |
    | `firm` | `p ≥ 20` |
-   | `shown` | `firm` and `unattributed ≤ spend` |
+   | `shown` | `firm`, `spend > 0`, and `unattributed ≤ spend` |
 
    The plan shows whole-number percents, so a reading can be off by up to a point: the band holds the ceiling for
    any percent within one point.
 
    **No dollar figure without enough data.** When `shown` is false, `ceiling`, `band_low` and `band_high` are
-   `null` (and print as "not enough data"), the row is left off the chart, and its `change_note` says why:
-   `"not enough data: under 20% used"` when not firm, else `"not enough data: most spend in it has no known
-   account"`.
+   `null` (and print as "not enough data"), the row is never a point or a card's figure on any chart, and its
+   `change_note` says why, the first that applies: `"not enough data: under 20% used"` when not firm; `"not enough
+   data: most spend in it has no known account"` when `unattributed > spend`; else `"not enough data: no spend in it
+   on this machine"` (`spend` is 0: the account's use went to another account here, or happened elsewhere).
 
 **One row per group:**
 
@@ -524,7 +555,9 @@ window.
 | `family`, `account`, `window` | the group's (account shown by 8 characters) |
 | `resets_at`, `start`, `reading_at` | `R`, `start`, `T` |
 | `reading_source`, `percent` | the chosen reading's |
+| `reset_at` | the first reset's `at` (step 1), written as a time (§2), or `null`. A report may say "the plan reset early; use after the reset isn't counted" |
 | `spend_nano`, `ceiling_nano` | integers |
+| `tokens` | an integer (step 5) |
 | `spend_usd`, `ceiling_usd`, `band_low_usd`, `band_high_usd`, `unattributed_usd` | dollar strings |
 | `firm`, `shown` | |
 | `unpriced_events` | |
@@ -533,7 +566,7 @@ window.
 Rows are sorted by family, window, account (the 8-character form, then the full id), then `R`.
 
 **Week over week.** Each row is compared with the previous row of the same family, window and account. The first
-rule that applies sets `change_note`. Each of the seven notes leaves `change_pct` and `change_within_band` `null`:
+rule that applies sets `change_note`. Each of the six notes leaves `change_pct` and `change_within_band` `null`:
 
 1. The row's account is `""` and the family's source has named more than one account: `"account unknown"`.
 2. The row isn't `shown`: its "not enough data" note (above).
@@ -547,8 +580,7 @@ rule that applies sets `change_note`. Each of the seven notes leaves `change_pct
    - Otherwise: `"an early reset (the plan reset before the last window was out)"`.
 5. The previous row isn't `shown`: `"not enough data in the last window"`.
 6. Either row's `unattributed_usd` isn't `"0.00"`: `"spend with no known account"`.
-7. The previous `ceiling` is 0: `"no spend in the last window"`.
-8. Otherwise `change_note` is `null`, and:
+7. Otherwise `change_note` is `null` (both rows are shown, so both ceilings are above 0), and:
    - `change_pct` is `(ceiling − previous) × 100 / previous`, as a one-decimal string;
    - `change_within_band` is `true` when the two bands overlap (an open band reaches to infinity). Overlapping bands
      mean the change may be only the plan's rounding.
@@ -629,16 +661,18 @@ the current time for reports, and `--now` for `conformance` (§12).
 
 The character is the one at that level, counting `▁` as 0.
 
-**Sentences.** Every surface leads with these, in the person's words:
+**Sentences.** The CLI's reports, the `chart` command's output and the MCP results lead with these, in the person's
+words (the chart page itself leads with each account's header line, §11.3):
 
 - "Your plan's week is worth about $X of API use, down Y% since <first week's date>": the ceiling trend of the
   account in use now, for Claude's `seven_day`.
 - "You used $A in the last 7 days, up Z% from the 7 days before": the spend trend.
 
 When a change is `null`, or `within rounding`, the sentence says that in words instead of a percent. When more than
-one account's weeks are in view, the first sentence names its account the way the chart's legend does (§11.3): "On
-the account that resets Saturday, your plan's week is worth about $X ...". Sentences are presentation, not part of
-the conformance document.
+one account's weeks are in view, the first sentence names its account by the weekday its latest week resets on, as
+the chart page names its sections (§11.3): "On the account that resets Saturday, your plan's week is worth about $X
+...", or by its first 8 characters when two accounts share that weekday. Sentences are presentation, not part of the
+conformance document.
 
 ## 10 Yield (Level 2)
 
@@ -751,7 +785,7 @@ The reference: `python3 -I reference/meter.py <command>`.
 | `ceiling` | §9; `--family`, `--window`, `--count` |
 | `record-quota <percent>` | §6.5; `--window`, `--resets-at`, `--family` |
 | `status` | §9 |
-| `chart` | writes the headline and both line charts to one self-contained file and prints its path and §9.1's sentences and sparklines: `~/.open-meter/meter-chart.svg`, or with `--html` `meter-chart.html` (the charts and the detail tables); `--out <file>` writes elsewhere. The file has no scripts and loads nothing, so it opens in any browser or Quick Look |
+| `chart` | writes the chart page (§11.3) to one self-contained file and prints its path and §9.1's sentences and sparklines: `~/.open-meter/meter-chart.svg`, or with `--html` `meter-chart.html`, the same page; `--out <file>` writes elsewhere. The file has no scripts and loads nothing, so it opens in any browser or Quick Look |
 | `sync` | read new log lines now (the first sync of a large history takes a while: run it here once) |
 | `yield --repo <path>` | §10 |
 | `mcp` | §11.1 |
@@ -763,7 +797,7 @@ The reference: `python3 -I reference/meter.py <command>`.
 
 Reports take `--json`, `--db`, `--prices` and `--tz`. A mistake exits with code 2 and one plain line on stderr.
 
-### 11.3 Dashboard
+### 11.3 Dashboard and the chart page
 
 One page, run in the foreground until Ctrl-C. Nothing starts it at login.
 
@@ -779,30 +813,56 @@ One page, run in the foreground until Ctrl-C. Nothing starts it at login.
   - headers, on every response including errors: `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri
     'none'; form-action 'none'; frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy:
     no-referrer`, `Cache-Control: no-store`.
-- **What it shows, top to bottom** (the picture first):
-  1. **The headline:** §9.1's two sentences, the ceiling first.
-  2. **What the plan gives you:** a line chart of Claude's weekly ceilings, week by week (the last 8 windows), one
-     line per account, trusted weeks only (§9.1), so the line never shows a week the headline refuses. The band
-     is shaded, and the lower-bound note sits under it.
-  3. **What you use:** a line chart of API-equivalent dollars per day for the last 30 days, with the 7-day average
-     as the stronger line.
-  4. **The tables:** spend by model for the last 7 days, and the ceiling rows with their notes and unattributed
-     spend.
-- **Drawing rules** (from the dataviz method, so the charts read right):
-  - **Lines and points:** 2px lines; points 8px across with a 2px surface ring; bands as a 10% wash of the series
-    colour; hairline gridlines.
-  - **Axes:** a y-axis from zero with clean ticks.
-  - **Labels:** text in ink colours, never the series colour; a legend whenever two or more accounts are plotted or
-    the one plotted isn't the account in use now, naming each account in plain words by the weekday its latest
-    plotted week ends on, in the report's zone ("the account that resets Monday"), or by its first 8 characters
-    when two share that weekday; the value labelled at the end of each line, with a short leader in the series
-    colour when two labels had to be pushed apart. A week whose reset is still ahead of the time of drawing is
-    plotted at its reset date but drawn hollow, its end label reads "so far" and its tooltip "This week so far", so
-    nobody reads a future date as a finished week.
-  - **Colours:** the categorical slots in fixed order, `#2a78d6`, `#eb6834`, `#1baf7a` in light mode, with their
-    dark steps `#3987e5`, `#d95926`, `#199e70`. A fourth account or more folds into the table only.
-  - **Hover:** each point's values are in an SVG `<title>`, the browser's own tooltip. The page has no script, and
-    the tables hold every value.
+- **What it shows, top to bottom:** the chart page (below), then a line chart of API-equivalent dollars per day for
+  the last 30 days with the 7-day average as the stronger line (2px lines, the first categorical slot `#2a78d6`,
+  dark step `#3987e5`, hairline gridlines, a y-axis from zero, each day's values in an SVG `<title>`), then the
+  tables: spend by model for the last 7 days, and every ceiling row with its note and unattributed spend.
+
+**The chart page.** The picture, as one page: `chart --html` writes it, `chart` writes the same design as one SVG,
+and the dashboard opens with it. It follows the dashboard's page rules: no scripts, nothing loaded from elsewhere,
+every value escaped. It draws only Claude's `seven_day` rows, from the ceiling rows (§8) and nothing else.
+
+- **The weeks it draws** are the chart's points (§12 `ceiling_points`): each account's trusted rows (§9.1), the last
+  8, for the 3 accounts with the latest such weeks (a note under the sections counts any others). So a week that
+  isn't `shown` (under 20% used, no spend here, mostly spend with no known account), a week with any unattributed
+  spend, and a week that overlaps another are never a point or a card. A week is **open** while its reset is after
+  the time of drawing, unless it has a `reset_at`: then its figure is final.
+- **Top:** the title "Claude Code — weekly usage limit (API-equivalent)" and two lines: what the figure is, and that
+  a falling line means the plan gives less and a rising line more, each account its own line.
+- **A section per account;** the account whose latest drawn week resets last comes first. Its heading names it by
+  the weekday that week resets on, in the report's zone ("Account that resets Saturday"), with its first 8
+  characters beside it in small type, or by those characters when two accounts share the weekday. Under it, one
+  line: the first week's start and the last week's reset, the first and last `ceiling` and the change between them,
+  as §9.1's ceiling trend gives it ("Sep 27 → Nov 8: $100.00 → $76.36 (-23.6% total)", with "within the plan's
+  rounding" when §9.1 says so), then the change from each drawn week to the next one, one decimal with its sign
+  ("Week on week: -2.8% · -5.3%"). With one drawn week, the line is its dates, its `ceiling` and "(one week so
+  far)".
+- **On the left, a card per week,** oldest first, under its dates ("Sat, Oct 24 – Sat, Oct 31", or for an open week
+  "This week · Sat, Nov 14 – Sat, Nov 21"), in three columns:
+  - **Used:** `percent`, and under it "hit the limit" at 100, else "N% unused" (N is 100 − `percent`); an open week
+    says "N% left, week still open"; a week with a `reset_at` adds "(use after the reset left out)".
+  - **Tokens:** `tokens`, and "of" the tokens the week implies, `tokens × 100 / p` rounded half away from zero; both
+    with one decimal, rounded half away from zero, in the largest of B, M and K that fits ("7.7B"). A count that
+    rounds to 1000.0 of a unit takes the next one up (999,950 is "1.0M"), and a count under 1,000 prints whole
+    ("999").
+  - **API-equivalent:** `spend`, and "of" the `ceiling`, as dollars with thousands commas ("1,234.56 $").
+- **On the right, "Weekly usage limit, week over week":** one line chart per section. A y-axis from $0 with clean
+  ticks; one point per card, its `ceiling` labelled beside it, placed where the line isn't (above a peak, under a
+  dip, beside a point the line runs through, else above or under it; a figure that would touch another is left
+  to its card and its tooltip); the dates under each point ("Oct 31–Nov 7", on two lines when they don't fit, and
+  only every other week's when even that doesn't). The chart is at least 560 px wide. An open week's point is
+  hollow and "so far" sits under its dates. Each point's SVG `<title>` holds its dates, its `ceiling` and its band,
+  and for a week with a `reset_at`, that the plan reset early.
+- **Under the sections:** the figure's definition (dollars used divided by the percent at the week's highest reading,
+  only the use before an early reset counting); the lower-bound note (§8); that weeks with no usable reading are left
+  out, and why a week can be; that right after an account switch spend counts toward the earlier account (§13); the
+  price list's date and when the page was drawn.
+- **Empty:** with no readings, the place of the sections says how to get them (the wrapper, or record-quota); with
+  readings but no week to draw, it says a week shows once the plan reads 20% or more used, with spend here tied to
+  the account.
+- **Look:** dark, as the design was picked (background `#18191b`, the line and its words gold `#d4a72c`); a light
+  palette under a light system setting (`prefers-color-scheme`), with the gold darkened for contrast. Cards and the
+  chart panel side by side, wrapping to one column on a narrow screen.
 
 ### 11.4 Installing the statusline wrapper
 
@@ -870,7 +930,7 @@ prints one JSON document:
 
 | Key | What it holds |
 |---|---|
-| `spec` | `"1.2"` |
+| `spec` | `"1.3"` |
 | `events` | every event in the ledger, sorted by `at` then `key`: the §3.4 fields with `account` in its 8-character form and `at` as a time, plus `priced` (bool) and `cost_nano` (integer or `null`) |
 | `totals` | per `(source, model)`, sorted by both: `events`; the sums of `input`, `cache_read`, `cache_write`, `cache_write_1h`, `output`, `reasoning`, `web_search`; `cost_nano` and `usd`, `null` when the model is unpriced; `priced` |
 | `by_day` | per `(day, source)` in `--tz`, sorted by both: `events`, `cost_nano` (priced only), `usd`, `unpriced_events` |
@@ -906,6 +966,20 @@ python3 -I vectors/run.py -- <your command>
   changes, so after switching back to an account whose weekly percent hasn't moved, the switch shows only when that
   percent moves or a new session reads it. History rebuilt from fewer readings is rougher.
 - **Two accounts on one schedule in one config folder** can't be told apart by §3.8; their owner lines decide.
+- **Early resets, two limits.** §8 judges a low reading by the next recorded reading, and recorded readings come
+  one per session and percent.
+  - **A reset can be lost.** A reset seen by a single low reading is lost when the next recorded reading is back
+    near the old high. That happens when the only sessions climbing after the reset had already shown those
+    percents: their first new reading is just above the old high. A reset no session showed a new low percent for
+    leaves nothing to find at all. Then the use after the reset counts, and the week can again read about double.
+  - **A reset can be made up.** Two or more stale low readings recorded late (a feed that times a reading by when it
+    was saved, a backfill, a wrapper installed in the middle of a week) can look like a reset. The running week is
+    then marked final and its later use left out, though its figure is still spend over the percent of an earlier
+    reading.
+  - **After 100%, the figure is right.** When the week reached 100% before a reset, seen or not, made up or not, the
+    first 100% is the chosen reading, since no reading is higher.
+
+  The plan for 1.4 is in docs/decisions.md.
 - **The plan's percent is coarse.** Claude's statusline shows whole numbers. Early in a window the band is wide,
   which is why "firm" starts at 20%.
 - **Formats change.** The log formats are the clients' own and undocumented. The fields above are what the clients

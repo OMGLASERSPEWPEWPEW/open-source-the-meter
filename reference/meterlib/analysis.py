@@ -6,9 +6,9 @@ import re
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from .util import NANO_PER_USD, day_of, decimal_of, format_time_ms, half_up, local_dt, usd
+from .util import NANO_PER_USD, day_of, decimal_of, format_time_ms, half_up, local_dt, parse_time_ms, usd
 
-SPEC_VERSION = "1.2"
+SPEC_VERSION = "1.3"
 
 FAMILY_SOURCE = {"claude": "claude_code", "codex": "codex"}
 WINDOW_SECONDS = {"five_hour": 5 * 3600, "seven_day": 7 * 86400}
@@ -97,9 +97,29 @@ def _ratio(numerator: int, denominator: Decimal):
     return int(half_up(Decimal(numerator) * 100 / denominator)) if denominator > 0 else None
 
 
-def ceilings(events, readings, several=frozenset()) -> list[dict]:
-    """The implied ceiling of each window: API-equivalent spend in the window up to the latest reading, divided by
-    that reading's percent, with a band for a reading that may be off by one point."""
+RESET_AT_MOST = 10   # a reading at or under this, after one at FIRM_PERCENT or more, may be the plan resetting early
+RESET_DROP = 10      # ... and it is one when the next reading is also more than this below the high before it
+EVENT_TOKENS = ("input", "cache_read", "cache_write", "cache_write_1h", "output")   # reasoning is part of output
+
+
+def first_reset(rs: list):
+    """The index, in `at` order, of the reading where the plan reset the window's usage early, or None (SPEC.md §8).
+    Within one window the plan's percent never falls except at a reset. A low reading with the next one back near
+    the high is a stale repeat from an idle session's status line, not a reset. Given the recorded readings: distinct
+    ones keep each percent once, at its first time, so a climb after a reset through percents the week already
+    showed would leave none."""
+    high = None
+    for i, r in enumerate(rs):
+        pct = decimal_of(r["percent"])
+        if high is not None and high >= FIRM_PERCENT and pct <= RESET_AT_MOST:
+            if i + 1 == len(rs) or decimal_of(rs[i + 1]["percent"]) < high - RESET_DROP:
+                return i
+        high = pct if high is None else max(high, pct)
+    return None
+
+
+def _windows(readings) -> dict:
+    """Readings grouped by (family, account, window, instance), in `at` order (SPEC.md §8)."""
     groups = {}
     for r in readings:
         length = window_seconds(r["window"])
@@ -107,15 +127,36 @@ def ceilings(events, readings, several=frozenset()) -> list[dict]:
             continue
         instance = (r["resets_at"] + 300) // 600 * 600  # readings within ~5 minutes of each other are one window
         groups.setdefault((r["family"], r.get("account", ""), r["window"], instance), []).append(r)
+    for rs in groups.values():
+        rs.sort(key=lambda r: (r["at"], decimal_of(r["percent"]), r["resets_at"], r.get("session", "")))
+    return groups
+
+
+def ceilings(events, readings, several=frozenset(), recorded=None) -> list[dict]:
+    """The implied ceiling of each window: API-equivalent spend in the window up to its highest reading before any
+    early reset, divided by that reading's percent, with a band for a reading that may be off by one point.
+    `readings` are the distinct readings; `recorded` the readings as recorded, where an early reset is found (the
+    distinct ones when not given)."""
+    groups = _windows(readings)
+    found = _windows(recorded) if recorded is not None else groups
     rows = []
-    for (family, account, window, _instance), rs in groups.items():
-        chosen = max(rs, key=lambda r: (r["at"], r["percent"]))
+    for key, rs in groups.items():
+        family, account, window, _instance = key
+        # A reading taken at or after its window's end can't be a reset inside it (a session waking up late).
+        rec = [r for r in found.get(key, rs) if r["at"] < r["resets_at"] * 1000]
+        reset = first_reset(rec)
+        reset_ms = rec[reset]["at"] if reset is not None else None
+        # Use after an early reset is another allowance: only the readings from before it count. Never none: the
+        # reading at 20% or more before the reset has a distinct reading at its time or earlier.
+        counted = [r for r in rs if reset_ms is None or r["at"] < reset_ms]
+        # The highest percent; the first time it showed (at the limit the percent stays at 100 while use is blocked).
+        chosen = min(counted, key=lambda r: (-decimal_of(r["percent"]), r["at"], r["resets_at"]))
         pct = decimal_of(chosen["percent"])
         if pct <= 0:
             continue
         length = window_seconds(window)
         start_ms = (chosen["resets_at"] - length) * 1000
-        spend, unpriced, unattributed = 0, 0, 0
+        spend, unpriced, unattributed, tokens = 0, 0, 0, 0
         source = FAMILY_SOURCE[family]
         for ev in events:
             if ev["source"] != source or not start_ms <= ev["at"] <= chosen["at"]:
@@ -128,15 +169,18 @@ def ceilings(events, readings, several=frozenset()) -> list[dict]:
                 if ev["cost_nano"] is not None:
                     unattributed += ev["cost_nano"]  # the reading's account is unknown: maybe this, maybe not
                 continue
+            tokens += sum(ev[f] for f in EVENT_TOKENS)
             if ev["cost_nano"] is None:
                 unpriced += 1
             else:
                 spend += ev["cost_nano"]
-        # A dollar figure only when it means something: firm, and not mostly spend no account can be tied to.
+        # A dollar figure only when it means something: firm, some spend here, and not mostly spend no account can be
+        # tied to. A firm week with no spend on this machine would plot at $0.00.
         firm = pct >= FIRM_PERCENT
-        shown = firm and unattributed <= spend
+        shown = firm and spend > 0 and unattributed <= spend
         why = None if shown else ("not enough data: under 20% used" if not firm
-                                  else "not enough data: most spend in it has no known account")
+                                  else "not enough data: most spend in it has no known account" if unattributed > spend
+                                  else "not enough data: no spend in it on this machine")
         ceiling = _ratio(spend, pct) if shown else None
         low = _ratio(spend, pct + 1) if shown else None
         high = (_ratio(spend, pct - 1) if pct > 1 else None) if shown else None
@@ -145,7 +189,8 @@ def ceilings(events, readings, several=frozenset()) -> list[dict]:
             "resets_at": format_time_ms(chosen["resets_at"] * 1000), "start": format_time_ms(start_ms),
             "reading_at": format_time_ms(chosen["at"]), "reading_source": chosen["source"],
             "percent": chosen["percent"],
-            "spend_nano": spend, "spend_usd": usd(spend),
+            "reset_at": format_time_ms(reset_ms) if reset_ms is not None else None,
+            "spend_nano": spend, "spend_usd": usd(spend), "tokens": tokens,
             "ceiling_nano": ceiling, "ceiling_usd": usd(ceiling),
             "band_low_usd": usd(low), "band_high_usd": usd(high) if shown else None,
             "firm": firm, "shown": shown, "_why": why,
@@ -176,9 +221,7 @@ def ceilings(events, readings, several=frozenset()) -> list[dict]:
             row["change_note"] = "not enough data in the last window"
         elif row["unattributed_usd"] != "0.00" or prev["unattributed_usd"] != "0.00":
             row["change_note"] = "spend with no known account"
-        elif not prev["ceiling_nano"]:
-            row["change_note"] = "no spend in the last window"
-        else:
+        else:   # both shown, so both ceilings are above 0
             change = (Decimal(row["ceiling_nano"]) - prev["ceiling_nano"]) * 100 / prev["ceiling_nano"]
             row["change_pct"] = str(half_up(change, 1))
             # Bands that overlap mean the change may be only the plan's whole-number rounding.
@@ -308,7 +351,7 @@ def git_log_command(git: str, repo: str, since_ms: int, until_ms: int) -> list:
     ]
 
 
-def conformance(events, readings, tz, yield_case=None, several=frozenset(), now_ms=None) -> dict:
+def conformance(events, readings, tz, yield_case=None, several=frozenset(), now_ms=None, recorded=None) -> dict:
     """The document a conforming implementation prints for `conformance` (SPEC.md §12)."""
     doc = {
         "spec": SPEC_VERSION,
@@ -316,7 +359,7 @@ def conformance(events, readings, tz, yield_case=None, several=frozenset(), now_
         "totals": totals(events),
         "by_day": by_day(events, tz),
         "readings": [reading_out(r) for r in readings],
-        "ceilings": ceilings(events, readings, several),
+        "ceilings": ceilings(events, readings, several, recorded),
     }
     if now_ms is not None:
         doc["trend"] = trend_doc(events, doc["ceilings"], now_ms, tz)
@@ -435,17 +478,23 @@ def current_account(events, source: str = "claude_code", now_ms=None) -> str:
     return short_account(latest["account"]) if latest else ""
 
 
+def _plotted(rows):
+    """Claude's weekly rows the chart plots: the trusted ones (the chart plots what the headline stands on, nothing it
+    refuses), per account, oldest first; and the accounts, the one with the latest such week first."""
+    by_account = {}
+    for r in sorted(rows, key=lambda r: r["resets_at"]):
+        if r["family"] == "claude" and r["window"] == "seven_day" and trusted(r):
+            by_account.setdefault(r["account"], []).append(r)
+    return by_account, sorted(by_account, key=lambda a: by_account[a][-1]["resets_at"], reverse=True)
+
+
 def chart_data(events, rows, now_ms: int, tz) -> dict:
     """What the chart plots and its headline numbers (SPEC.md §11.3, §12): Claude's weekly ceilings for up to 3
     accounts over their last 8 windows, the 30 days of spend, and the headline."""
     weekly = [r for r in rows if r["family"] == "claude" and r["window"] == "seven_day"]
-    by_account = {}
-    for r in sorted(weekly, key=lambda r: r["resets_at"]):
-        if trusted(r):   # the chart plots what the headline stands on, nothing it refuses
-            by_account.setdefault(r["account"], []).append(r)
-    accounts = sorted(by_account, key=lambda a: by_account[a][-1]["resets_at"], reverse=True)[:CHART_ACCOUNTS]
+    by_account, accounts = _plotted(weekly)
     points = []
-    for account in sorted(accounts):
+    for account in sorted(accounts[:CHART_ACCOUNTS]):
         for r in by_account[account][-TREND_WEEKS:]:
             points.append({"account": account, "resets_at": r["resets_at"], "ceiling_usd": r["ceiling_usd"],
                            "band_low_usd": r["band_low_usd"], "band_high_usd": r["band_high_usd"], "firm": r["firm"]})
@@ -461,6 +510,27 @@ def chart_data(events, rows, now_ms: int, tz) -> dict:
     return {"headline": headline, "ceiling_points": points, "has_readings": bool(weekly),
             "spend_points": [dict(d) for d in spend["days"]], "spend_sparkline": spend["sparkline"],
             "ceiling_sparkline": trend["sparkline"] if trend else ""}
+
+
+def chart_sections(rows, now_ms: int) -> dict:
+    """The chart page's numbers (SPEC.md §11.3), one section per plotted account, the latest week's account first:
+    its weeks oldest first (the ceiling_points of chart_data, with their whole rows), each marked open while its
+    reset is ahead of now (unless the plan already reset it early: that figure is final), with the tokens the week
+    implies and the change from the week before it on the chart; and the first-to-last trend."""
+    weekly = [r for r in rows if r["family"] == "claude" and r["window"] == "seven_day"]
+    by_account, accounts = _plotted(weekly)
+    trends = {t["account"]: t for t in ceiling_trends(weekly)}
+    sections = []
+    for account in accounts[:CHART_ACCOUNTS]:
+        weeks, prev = [], None
+        for r in by_account[account][-TREND_WEEKS:]:
+            pct = decimal_of(r["percent"])
+            weeks.append(dict(r, open=parse_time_ms(r["resets_at"]) > now_ms and r["reset_at"] is None,
+                              tokens_ceiling=int(half_up(Decimal(r["tokens"]) * 100 / pct)),
+                              step_pct=_pct(r["ceiling_nano"], prev["ceiling_nano"]) if prev else None))
+            prev = r
+        sections.append({"account": account, "weeks": weeks, "trend": trends.get(account)})
+    return {"sections": sections, "more_accounts": max(0, len(accounts) - CHART_ACCOUNTS), "has_readings": bool(weekly)}
 
 
 def trend_doc(events, rows, now_ms: int, tz) -> dict:

@@ -250,6 +250,9 @@ What the reference does (`dashboard.py`):
 - Two fixed routes, `/` and `/summary.json`; everything else is 404. It never serves files from a folder. (High)
 - The page has no scripts and no outside resources. Every value is `html.escape`d, and model names are also cleaned
   (section 3). It shows days, models and ceilings, not project folders. (High)
+- The `chart` command writes the same page to one file (HTML, or one SVG), by the same rules: no scripts, nothing
+  loaded from elsewhere, every value escaped. It is written 0600, atomically, to the meter's home or the path given
+  with `--out`. (High)
 - On every response, Python's own error pages included (through `end_headers`):
   `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
   `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`. It sends no

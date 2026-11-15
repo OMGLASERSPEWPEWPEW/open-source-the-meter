@@ -10,6 +10,7 @@ import http.client
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -62,6 +63,9 @@ def read_json(path):
 def read_text(path):
     with open(path, encoding="utf-8") as fh:
         return fh.read()
+
+
+NO_TOKENS = {"input": 0, "cache_read": 0, "cache_write": 0, "cache_write_1h": 0, "output": 0}
 
 
 def assistant(msg, at, out, session="s1", cwd="/work"):
@@ -529,12 +533,16 @@ class Picture(TempHome):
         self.assertEqual(os.stat(r["path"]).st_mode & 0o777, 0o600)
         svg = read_text(r["path"])
         self.assertTrue(svg.startswith("<svg") and "<script" not in svg and "http://" not in svg.replace("http://www.w3.org/2000/svg", ""))
-        self.assertIn("down 23.6% since Oct\u00a04", svg)
-        self.assertIn("$76.36", svg)                      # the last point's tooltip carries the exact value
+        self.assertIn("Sep\u00a027 \u2192 Nov\u00a08:\u00a0 $100.00 \u2192 $76.36 \u00a0(-23.6% total)", svg)
+        self.assertIn(">$76.36<", svg)                    # the last point's label carries the exact value
+        self.assertTrue(r["headline"].startswith("Your plan's week is worth about $76 of API use, down 23.6%"))
         self.assertEqual(r["spend_sparkline"], "\u2587" * 23 + "\u2588" * 7)
         page = read_text(m.chart("html")["path"])
-        self.assertLess(page.index("<svg"), page.index("<table"), "the picture before the tables")
         self.assertNotIn("<script", page)
+        self.assertNotIn("<table", page, "the chart page is the picture; the tables are the dashboard's")
+        from meterlib import dashboard
+        live = dashboard.page(m)
+        self.assertLess(live.index('class="card"'), live.index("<table"), "the dashboard: the picture before the tables")
 
     def test_mcp_chart_tool_and_trend_lead(self):
         m = self._seeded()
@@ -573,7 +581,7 @@ class StrangerTest(TempHome):
     def test_an_early_or_mostly_unattributed_week_is_not_enough_data(self):
         from meterlib.util import parse_time_ms
         r = parse_time_ms("2026-11-13T19:00:00Z") // 1000
-        ev = lambda acct, cost, key: {"source": "claude_code", "account": acct, "at": (r - 86400) * 1000, "cost_nano": cost, "key": key}
+        ev = lambda acct, cost, key: dict(NO_TOKENS, source="claude_code", account=acct, at=(r - 86400) * 1000, cost_nano=cost, key=key)
         rows = analysis.ceilings([ev("a", 1_000_000_000, "1"), ev("", 50_000_000_000, "2")],
                                  [self.row(account="a", resets_at=r, percent=100, at=(r - 3600) * 1000)])
         self.assertEqual((rows[0]["shown"], rows[0]["ceiling_usd"], rows[0]["band_low_usd"]), (False, None, None))
@@ -586,8 +594,8 @@ class StrangerTest(TempHome):
         from meterlib.util import parse_time_ms
         def r(s):
             return parse_time_ms(s) // 1000
-        ev = [{"source": "claude_code", "account": "a", "at": (r("2026-11-01T00:00:00Z") + i * 21600) * 1000,
-               "cost_nano": 1_000_000_000, "key": str(i)} for i in range(120)]
+        ev = [dict(NO_TOKENS, source="claude_code", account="a", at=(r("2026-09-27T00:00:00Z") + i * 21600) * 1000,
+                   cost_nano=1_000_000_000, key=str(i)) for i in range(240)]   # spend in every week, Sep 27 on
         def notes(resets):
             rows = analysis.ceilings(ev, [self.row(account="a", resets_at=x, percent=50, at=(x - 3600) * 1000) for x in resets])
             return [x["change_note"] for x in rows]
@@ -638,10 +646,6 @@ class RoundThree(TempHome):
         from meterlib import charts
         text = charts.ceiling_sentence({"ceiling_usd": None, "others_plotted": True, "account": "bbbbbbbb"}, None)
         self.assertIn("account bbbbbbbb", text)
-        svg = charts.ceiling_chart([{"account": "aaaaaaaa", "resets_at": "2026-11-06T19:00:00.000Z", "ceiling_usd": "32.00",
-                                     "band_low_usd": "30.00", "band_high_usd": "34.00", "firm": True}], None,
-                                   headline_account="bbbbbbbb")
-        self.assertIn(">resets Friday<", svg, "a legend says whose line it is, in plain words")
         two = charts.account_names([{"account": "aaaaaaaa", "resets_at": "2026-11-06T19:00:00.000Z"},
                                     {"account": "bbbbbbbb", "resets_at": "2026-11-13T02:00:00.000Z"}], timezone.utc)
         self.assertEqual(two, {"aaaaaaaa": "account aaaaaaaa", "bbbbbbbb": "account bbbbbbbb"}, "a shared weekday names ids")
@@ -655,15 +659,22 @@ class RoundThree(TempHome):
 
     def test_a_week_still_open_is_drawn_as_so_far(self):
         from meterlib import charts
-        from meterlib.util import parse_time_ms
-        pts = [{"account": "aaaaaaaa", "resets_at": r, "ceiling_usd": c, "band_low_usd": c, "band_high_usd": c, "firm": True}
-               for r, c in (("2026-11-07T11:00:00.000Z", "1904.24"), ("2026-11-14T11:00:00.000Z", "2537.37"),
-                            ("2026-11-21T11:00:00.000Z", "2539.00"))]
-        svg = charts.ceiling_chart(pts, timezone.utc, now_ms=parse_time_ms("2026-11-14T19:00:00Z"))
-        self.assertEqual(svg.count('class="open s1"'), 1, "only the week still running is hollow")
-        self.assertIn("$2,539 so far", svg)
-        self.assertIn("This week so far, resetting Nov\u00a021", svg)
-        self.assertNotIn("so far", charts.ceiling_chart(pts, timezone.utc), "no time given: nothing marked")
+        from meterlib.util import format_time_ms, parse_time_ms
+        rows = [{"family": "claude", "window": "seven_day", "account": "aaaaaaaa", "resets_at": r, "reset_at": None,
+                 "start": format_time_ms(parse_time_ms(r) - 7 * 86400000), "percent": 50, "tokens": 10, "spend_usd": "1.00", "ceiling_usd": c,
+                 "ceiling_nano": int(c.replace(".", "")) * 10 ** 7, "band_low_usd": c, "band_high_usd": c, "firm": True,
+                 "shown": True, "unattributed_usd": "0.00", "change_note": None}
+                for r, c in (("2026-11-07T11:00:00.000Z", "1904.24"), ("2026-11-14T11:00:00.000Z", "2537.37"),
+                             ("2026-11-21T11:00:00.000Z", "2539.00"))]
+        weeks = analysis.chart_sections(rows, parse_time_ms("2026-11-14T19:00:00Z"))["sections"][0]["weeks"]
+        self.assertEqual([w["open"] for w in weeks], [False, False, True])
+        self.assertEqual([w["step_pct"] for w in weeks], [None, "33.2", "0.1"])
+        svg = charts.week_chart(weeks, timezone.utc)
+        self.assertEqual(svg.count('class="dot open"'), 1, "only the week still running is hollow")
+        self.assertIn(">so far<", svg)
+        self.assertIn("This week so far", svg)
+        closed = analysis.chart_sections(rows, parse_time_ms("2026-11-22T00:00:00Z"))["sections"][0]["weeks"]
+        self.assertNotIn("so far", charts.week_chart(closed, timezone.utc), "once it resets, it's a finished week")
 
 
 class AccountSwitch(TempHome):
@@ -740,6 +751,27 @@ class AccountSwitch(TempHome):
         self.assertEqual(sch.folder("s1"), "/home/u/subagents/.claude/projects")
         self.assertTrue(sch.active)
 
+    def test_recorded_readings_keep_each_sessions_own(self):
+        ledger, conn = self._ledger()
+        conn.execute("INSERT INTO sessions VALUES ('s4', 'A')")
+        self._read(conn, "2026-11-03T10:00:00Z", "2026-11-09T13:00:00Z", "s1", 5)
+        self._read(conn, "2026-11-05T10:00:00Z", "2026-11-09T13:00:00Z", "s4", 5)   # the same percent, later, elsewhere
+        distinct = [r for r in ledger.all_readings(conn) if r["percent"] == 5]
+        recorded = [r for r in ledger.recorded_readings(conn) if r["percent"] == 5]
+        self.assertEqual([(r["account"], r["at"]) for r in distinct], [("A", parse_time_ms("2026-11-03T10:00:00Z"))])
+        self.assertEqual([(r["session"], r["account"], r["at"]) for r in recorded],
+                         [("s1", "A", parse_time_ms("2026-11-03T10:00:00Z")), ("s4", "A", parse_time_ms("2026-11-05T10:00:00Z"))])
+
+    def test_recorded_readings_merge_by_the_resolved_account(self):
+        ledger, conn = self._ledger()
+        r = parse_time_ms("2026-11-09T13:00:00Z") // 1000
+        conn.execute("INSERT INTO readings VALUES ('claude', 'seven_day', ?, 100, 's1', 'A', ?, 'limit_hit', 0)",
+                     (r, parse_time_ms("2026-11-08T10:00:00Z")))
+        conn.execute("INSERT INTO readings VALUES ('claude', 'seven_day', ?, 100, 's1', '', ?, 'statusline', 1)",
+                     (r, parse_time_ms("2026-11-08T11:00:00Z")))   # the same session's 100%, its account by the sessions map
+        got = [(x["session"], x["account"], x["at"], x["source"]) for x in ledger.recorded_readings(conn)]
+        self.assertEqual(got, [("s1", "A", parse_time_ms("2026-11-08T10:00:00Z"), "limit_hit")], "one row, the earliest")
+
     def test_a_reading_counts_for_seven_days_and_a_folder_keeps_its_own_sign_in(self):
         ledger, conn = self._ledger()
         self._read(conn, "2026-11-03T10:00:00Z", "2026-11-09T13:00:00Z", "s1")
@@ -750,6 +782,271 @@ class AccountSwitch(TempHome):
         self._event(conn, "other_folder", "s3", "2026-11-08T12:00:00Z")  # /y is signed in on its own
         got = self.accounts(ledger, conn)
         self.assertEqual((got["after_reset"], got["stale"], got["other_folder"]), ("B", "A", "C"))
+
+
+class PlanReset(unittest.TestCase):
+    """SPEC.md §8 (1.3): a plan that resets its usage inside a window, stale repeats, and weeks with no spend here."""
+
+    R = parse_time_ms("2026-11-16T13:00:00Z") // 1000   # a Monday reset
+
+    def reading(self, at, pct, resets=None, source="statusline"):
+        return {"family": "claude", "account": "a", "window": "seven_day", "resets_at": resets or self.R,
+                "percent": pct, "at": parse_time_ms(at), "source": source}
+
+    def event(self, at, dollars, key, account="a", **tokens):
+        ev = {"source": "claude_code", "account": account, "at": parse_time_ms(at), "cost_nano": int(dollars * 10 ** 9),
+              "key": key, "input": 0, "cache_read": 0, "cache_write": 0, "cache_write_1h": 0, "output": 0}
+        ev.update(tokens)
+        return ev
+
+    def one(self, events, readings, several=frozenset(), recorded=None):
+        rows = analysis.ceilings(events, readings, several, recorded=recorded)
+        self.assertEqual(len(rows), 1, rows)
+        return rows[0]
+
+    def test_a_reset_inside_the_window_counts_only_the_use_before_it(self):
+        before = [self.event(at, 10, "b%d" % i) for i, at in enumerate(
+            ("2026-11-10T10:00:00Z", "2026-11-11T10:00:00Z", "2026-11-11T18:00:00Z", "2026-11-11T18:29:00Z"))]
+        after = [self.event(at, 10, "a%d" % i) for i, at in enumerate(
+            ("2026-11-11T20:00:00Z", "2026-11-12T12:00:00Z", "2026-11-13T01:00:00Z"))]
+        readings = [self.reading("2026-11-09T18:00:00Z", 5), self.reading("2026-11-10T12:00:00Z", 40),
+                    self.reading("2026-11-11T18:00:00Z", 99),
+                    self.reading("2026-11-11T18:30:00Z", 100, source="limit_hit"),
+                    self.reading("2026-11-11T18:35:00Z", 100, resets=self.R + 2),   # the limit, read again
+                    self.reading("2026-11-11T18:42:00Z", 1),                        # the plan reset early
+                    self.reading("2026-11-11T20:00:00Z", 7), self.reading("2026-11-12T12:00:00Z", 50),
+                    self.reading("2026-11-13T01:00:00Z", 97),
+                    self.reading("2026-11-13T04:00:00Z", 93)]                      # a stale, lower last reading
+        row = self.one(before + after, readings)
+        self.assertEqual((row["percent"], row["reading_at"], row["reading_source"]),
+                         (100, "2026-11-11T18:30:00.000Z", "limit_hit"), "the first 100%, before the reset")
+        self.assertEqual((row["spend_usd"], row["ceiling_usd"], row["reset_at"]),
+                         ("40.00", "40.00", "2026-11-11T18:42:00.000Z"))
+
+    def test_a_lower_later_reading_is_stale(self):
+        events = [self.event("2026-11-03T09:00:00Z", 4.9, "e1"), self.event("2026-11-05T09:00:00Z", 4.9, "e2"),
+                  self.event("2026-11-06T12:00:00Z", 1, "e3")]   # after the 98% reading: not counted
+        r = self.R - 7 * 86400
+        row = self.one(events, [self.reading("2026-11-03T10:00:00Z", 30, r), self.reading("2026-11-06T10:00:00Z", 98, r),
+                                self.reading("2026-11-07T10:00:00Z", 91, r)])
+        self.assertEqual((row["percent"], row["spend_usd"], row["ceiling_usd"], row["reset_at"]), (98, "9.80", "10.00", None))
+
+    def test_a_lone_low_reading_is_a_stale_repeat_and_a_low_start_is_no_reset(self):
+        ev = [self.event("2026-11-10T09:00:00Z", 6.1, "e1")]
+        row = self.one(ev, [self.reading("2026-11-10T10:00:00Z", 60), self.reading("2026-11-10T11:00:00Z", 5),
+                            self.reading("2026-11-10T12:00:00Z", 61)])
+        self.assertEqual((row["percent"], row["reset_at"]), (61, None), "back near the high: a stale repeat")
+        row = self.one(ev, [self.reading("2026-11-10T08:00:00Z", 9), self.reading("2026-11-10T08:30:00Z", 4),
+                            self.reading("2026-11-10T12:00:00Z", 12)])
+        self.assertEqual((row["percent"], row["reset_at"]), (12, None), "no earlier reading at 20 or more")
+        row = self.one(ev, [self.reading("2026-11-10T10:00:00Z", 60), self.reading("2026-11-10T11:00:00Z", 3)])
+        self.assertEqual((row["percent"], row["reset_at"]), (60, "2026-11-10T11:00:00.000Z"), "a low last reading resets")
+        row = self.one(ev, [self.reading("2026-11-10T10:00:00Z", 60), self.reading("2026-11-10T11:00:00Z", 10),
+                            self.reading("2026-11-10T12:00:00Z", 49)])
+        self.assertEqual(row["reset_at"], "2026-11-10T11:00:00.000Z", "10 or less, then more than 10 below the high")
+
+    def test_a_low_reading_recorded_after_the_week_ended_is_no_reset(self):
+        r = self.R - 7 * 86400
+        ev = [self.event("2026-11-04T09:00:00Z", 6, "e1")]
+        late = [self.reading("2026-11-04T10:00:00Z", 60, r), self.reading("2026-11-09T14:00:00Z", 3, r),
+                self.reading("2026-11-09T15:00:00Z", 2, r)]   # after its reset at 13:00: a session waking up late
+        row = self.one(ev, late[:1], recorded=late)
+        self.assertEqual((row["percent"], row["reset_at"]), (60, None))
+
+    def test_a_firm_week_with_no_spend_here_has_no_figure(self):
+        row = self.one([self.event("2026-11-10T09:00:00Z", 5, "e1", account="b")],
+                       [self.reading("2026-11-10T10:00:00Z", 45)])
+        self.assertEqual((row["shown"], row["ceiling_usd"], row["band_low_usd"], row["band_high_usd"]),
+                         (False, None, None, None))
+        self.assertEqual(row["change_note"], "not enough data: no spend in it on this machine")
+        early = self.one([], [self.reading("2026-11-10T10:00:00Z", 12)])
+        self.assertEqual(early["change_note"], "not enough data: under 20% used", "the under-20% note comes first")
+        unknown = self.one([self.event("2026-11-10T09:00:00Z", 5, "e1", account="")],
+                           [self.reading("2026-11-10T10:00:00Z", 45)])
+        self.assertEqual(unknown["change_note"], "not enough data: most spend in it has no known account",
+                         "spend with no known account says so before \"no spend\": it's the more telling reason")
+        data = analysis.chart_data([], [row], parse_time_ms("2026-11-15T00:00:00Z"), timezone.utc)
+        self.assertEqual(data["ceiling_points"], [], "never a point at $0.00")
+
+    def recorded_week(self, top_before=60):
+        """$1 an hour; two sessions record 0% up to the high, one percent an hour; the plan resets; a new session
+        sees 1%, 2%, 5% ... (percents the week already showed), and the climb passes the old high."""
+        start = parse_time_ms("2026-11-11T18:00:00Z")
+        hour = lambda h: start + int(h * 3600000)
+        rec = [dict(self.reading("2026-11-11T18:00:00Z", p), at=hour(p), session="s1" if p % 2 == 0 else "s2")
+               for p in range(top_before + 1)]
+        t = top_before
+        rec += [dict(self.reading("2026-11-11T18:00:00Z", p), at=hour(t + h), session="s3")
+                for p, h in ((1, 1), (2, 2), (5, 5), (20, 15), (40, 30), (60, 45))]
+        rec += [dict(self.reading("2026-11-11T18:00:00Z", p), at=hour(t + h), session="s1") for p, h in ((70, 52), (80, 60))]
+        distinct = {}
+        for r in sorted(rec, key=lambda r: r["at"]):
+            distinct.setdefault(r["percent"], {k: v for k, v in r.items() if k != "session"})   # §6.6: the earliest
+        events = [self.event("2026-11-11T18:00:00Z", 1, "e%d" % h) for h in range(t + 60)]
+        for h, ev in enumerate(events):
+            ev["at"] = hour(h + 0.5)
+        return events, list(distinct.values()), rec, hour
+
+    def test_a_reset_only_a_new_session_saw_is_found_in_the_recorded_readings(self):
+        events, distinct, rec, hour = self.recorded_week()
+        row = self.one(events, distinct, recorded=rec)
+        self.assertEqual((row["percent"], row["reading_at"], row["reset_at"]),
+                         (60, analysis.format_time_ms(hour(60)), analysis.format_time_ms(hour(61))))
+        self.assertEqual((row["spend_usd"], row["ceiling_usd"]), ("60.00", "100.00"), "the use before the reset only")
+        blind = self.one(events, distinct)   # the distinct readings alone: every low percent merged away
+        self.assertEqual((blind["percent"], blind["reset_at"], blind["ceiling_usd"]), (80, None, "150.00"))
+
+    def test_a_reset_after_the_limit_is_right_even_unseen(self):
+        events, distinct, rec, hour = self.recorded_week(top_before=100)
+        unseen = [r for r in rec if r.get("session") != "s3"]
+        for recorded in (rec, unseen, None):
+            row = self.one(events, distinct, recorded=recorded)
+            self.assertEqual((row["percent"], row["reading_at"]), (100, analysis.format_time_ms(hour(100))))
+
+    def test_tokens_are_every_kind_the_week_counted(self):
+        row = self.one([self.event("2026-11-10T09:00:00Z", 5, "e1", input=1, cache_read=1000, cache_write=10,
+                                   cache_write_1h=100, output=5),
+                        self.event("2026-11-10T09:30:00Z", 5, "e2", account="b", output=999)],   # another account's
+                       [self.reading("2026-11-10T10:00:00Z", 50)])
+        self.assertEqual(row["tokens"], 1116)
+
+
+class WeeklyPage(TempHome):
+    """The chart page (SPEC.md §11.3): a section per account, a card and a labelled point per plotted week."""
+
+    def seeded(self, case, now):
+        src = os.path.join(REPO, "vectors", "cases", case)
+        shutil.copytree(os.path.join(src, "claude"), os.path.join(self.tmp, "claude", "projects"), dirs_exist_ok=True)
+        os.makedirs(os.environ["OPEN_METER_HOME"], exist_ok=True)
+        shutil.copyfile(os.path.join(src, "quota.jsonl"), os.path.join(os.environ["OPEN_METER_HOME"], "quota.jsonl"))
+        return Meter(tz="UTC", now=parse_time_ms(now))
+
+    def test_the_open_week_and_the_reset_week(self):
+        m = self.seeded("09-plan-reset", "2026-11-15T12:00:00Z")
+        page = read_text(m.chart("html")["path"])
+        self.assertIn("This week \u00b7 Sat, Nov 14 \u2013 Sat, Nov 21", page)
+        self.assertIn("75% left, week still open", page)
+        self.assertIn("hit the limit (use after the reset left out)", page)
+        self.assertNotIn("This week \u00b7 Mon", page, "a week the plan reset early is final, not open")
+        self.assertEqual(page.count("This week \u00b7"), 1)
+        self.assertNotIn("<script", page)
+        self.assertNotIn("http", page)
+        svg = read_text(m.chart("svg")["path"])
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(svg)   # well-formed
+        words = " | ".join(" ".join(t.itertext()) for t in root.iter("{http://www.w3.org/2000/svg}text"))
+        for said in ("This week \u00b7 Sat, Nov 14 \u2013 Sat, Nov 21", "75% left, week still open",
+                     "hit the limit (use after the reset left out)", "Weekly usage limit, week over week"):
+            self.assertIn(said, words)
+        self.assertEqual(svg.count('class="dot open"'), 1, "only the open week's point is hollow")
+        self.assertEqual(page.count('class="dot open"'), 1)
+
+    def test_every_surface_finds_the_reset_in_the_recorded_readings(self):
+        m = self.seeded("10-reset-seen-once", "2026-11-17T12:00:00Z")
+        row = m.ceiling(count=52)["windows"][0]
+        self.assertEqual((row["ceiling_usd"], row["percent"], row["reset_at"]), ("100.00", 60, "2026-11-14T07:00:00.000Z"))
+        data = m.chart_data()
+        self.assertEqual([(r["ceiling_usd"], r["reset_at"]) for r in data["rows"]], [("100.00", "2026-11-14T07:00:00.000Z")])
+        self.assertEqual([p["ceiling_usd"] for p in data["ceiling_points"]], ["100.00"])
+        self.assertEqual([w["ceiling_usd"] for w in data["sections"][0]["weeks"]], ["100.00"])
+        self.assertIn(">$100.00<", read_text(m.chart("svg")["path"]))
+
+    def test_no_zero_or_unfirm_week_is_a_card_or_a_point(self):
+        for case, now in (("09-plan-reset", "2026-11-15T12:00:00Z"), ("02-ceilings", "2026-11-16T12:00:00Z")):
+            m = self.seeded(case, now)
+            rows = [r for r in m.ceiling(count=52)["windows"]]
+            plotted = [r for r in rows if analysis.trusted(r)]
+            for fmt in ("html", "svg"):
+                text = read_text(m.chart(fmt)["path"])
+                self.assertEqual(text.count('class="card"'), len(plotted), (case, fmt))
+                self.assertEqual(text.count('class="dot'), len(plotted), (case, fmt))
+                self.assertIsNone(re.search(r"(?<![0-9,])0\.00\b", text), (case, fmt))   # no $0.00 anywhere
+                for r in rows:
+                    if not r["shown"]:
+                        self.assertNotIn(">%s%%<" % r["percent"], text, (case, fmt, r["percent"]))
+
+    def test_the_numbers_are_the_ceiling_rows(self):
+        from meterlib import charts
+        m = self.seeded("09-plan-reset", "2026-11-15T12:00:00Z")
+        page = read_text(m.chart("html")["path"])
+        rows = [r for r in m.ceiling(count=52)["windows"] if analysis.trusted(r)]
+        self.assertEqual(len(rows), 3)
+        for r in rows:
+            self.assertIn("<b>%s%%</b>" % r["percent"], page)
+            self.assertIn("<b>%s <em>$</em></b>" % charts.dollars(r["spend_usd"]), page)
+            self.assertIn("of %s $" % charts.dollars(r["ceiling_usd"]), page)
+            self.assertIn(">$%s<" % charts.dollars(r["ceiling_usd"]), page)   # the point's label
+            self.assertIn("<b>%s</b>" % charts.token_words(r["tokens"]), page)
+        self.assertEqual(charts.token_words(7_660_000_000), "7.7B")
+        self.assertEqual(charts.token_words(6_950_000_001), "7.0B")
+        self.assertEqual(charts.token_words(950_000), "950.0K")
+        self.assertIn("Nov\u00a02 \u2192 Nov\u00a016:\u00a0 $35.00 \u2192 $40.00", page)
+        self.assertIn("+14.3% total", page)
+
+    def eight_weeks(self, values):
+        from meterlib.util import format_time_ms
+        base = parse_time_ms("2026-09-19T11:00:00Z")
+        rows = []
+        for i, c in enumerate(values):
+            r = base + i * 7 * 86400000
+            rows.append({"family": "claude", "window": "seven_day", "account": "aaaaaaaa", "resets_at": format_time_ms(r),
+                         "start": format_time_ms(r - 7 * 86400000), "reading_at": format_time_ms(r - 86400000),
+                         "reset_at": None, "percent": 100, "tokens": 7_700_000_000, "spend_usd": c, "ceiling_usd": c,
+                         "ceiling_nano": int(c.replace(".", "")) * 10 ** 7, "band_low_usd": c, "band_high_usd": c,
+                         "firm": True, "shown": True, "unattributed_usd": "0.00", "change_note": None})
+        return analysis.chart_sections(rows, parse_time_ms("2026-12-01T00:00:00Z"))
+
+    def test_eight_weeks_fit_and_no_two_labels_touch(self):
+        import xml.etree.ElementTree as ET
+        from meterlib import charts
+        flat = ["2546.66"] * 8
+        rising = ["%d.00" % (2500 + 10 * i) for i in range(8)]
+        for values in (flat, rising):
+            data = self.eight_weeks(values)
+            page = charts.page_svg(dict(data, has_readings=True), timezone.utc, parse_time_ms("2026-12-01T00:00:00Z"),
+                                   "2026-10-26")
+            plot = re.search(r'<rect class="plot" x="64" y="54" width="([0-9.]+)"', page)
+            self.assertGreaterEqual(float(plot.group(1)) + 124, 560, "the SVG's chart is as wide as the HTML's")
+            for width in (560, float(plot.group(1)) + 124):
+                root = ET.fromstring('<svg xmlns="http://www.w3.org/2000/svg">%s</svg>'
+                                     % charts.week_chart(data["sections"][0]["weeks"], timezone.utc, int(width)))
+                boxes = {"val": [], "xl": []}
+                for t in root.iter("{http://www.w3.org/2000/svg}text"):
+                    kind = (t.get("class") or "").split()[0]
+                    if kind not in boxes:
+                        continue
+                    w = len(t.text) * (7.5 if kind == "val" else 6.8)
+                    x, y = float(t.get("x")), float(t.get("y"))
+                    left = {"start": x, "end": x - w}.get(t.get("text-anchor"), x - w / 2)
+                    boxes[kind].append((left, left + w, y - 12, y + 2, t.text, x))
+                for kind, bs in boxes.items():
+                    for i, a in enumerate(bs):
+                        for b in bs[i + 1:]:
+                            touch = a[0] < b[1] and b[0] < a[1] and a[2] < b[3] and b[2] < a[3]
+                            self.assertFalse(touch, (values[1], width, kind, a[4], b[4]))
+                self.assertEqual(len({b[5] for b in boxes["xl"]}), 8, "every week's dates")
+                self.assertGreaterEqual(len(boxes["val"]), 2, "at least the first and the last figure")
+
+    def test_token_words(self):
+        from meterlib import charts
+        self.assertEqual([charts.token_words(n) for n in (0, 999, 1000, 999_949, 999_950, 999_950_000, 7_656_577_590)],
+                         ["0", "999", "1.0K", "999.9K", "1.0M", "1.0B", "7.7B"])
+
+    def test_every_value_is_escaped(self):
+        from meterlib import charts
+        evil = "<img src=x onerror=alert(1)>&\"'"
+        row = {"family": "claude", "window": "seven_day", "account": evil, "resets_at": "2026-11-14T11:00:00.000Z",
+               "start": "2026-11-07T11:00:00.000Z", "reading_at": "2026-11-10T11:00:00.000Z", "reset_at": None,
+               "percent": 50, "spend_usd": "10.00", "ceiling_nano": 20_000_000_000, "ceiling_usd": "20.00",
+               "band_low_usd": "19.61", "band_high_usd": "20.41", "firm": True, "shown": True, "tokens": 1000,
+               "unattributed_usd": "0.00", "change_note": "first window"}
+        data = {"sections": analysis.chart_sections([row], parse_time_ms("2026-11-20T00:00:00Z"))["sections"],
+                "has_readings": True, "more_accounts": 0}
+        now = parse_time_ms("2026-11-20T00:00:00Z")
+        for text in (charts.page_html(data, timezone.utc, now, "2026-10-26", caption=evil),
+                     charts.page_svg(data, timezone.utc, now, "2026-10-26", caption=evil)):
+            self.assertNotIn("<img", text)
+            self.assertIn("&lt;img src=x onerror=alert(1)&gt;&amp;", text)
 
 
 class Vectors(unittest.TestCase):
